@@ -17,10 +17,19 @@ defmodule IronfireServer.Router do
     pipe_through :browser # Use the default browser stack
 
     get "/", PageController, :index
+    get "/login", PageController, :login
   end
 
   # Other scopes may use custom stacks.
   # scope "/api", IronfireServer do
   #   pipe_through :api
   # end
+
+  scope "/oauth", IronfireServer do
+    pipe_through :browser
+
+    get "/:provider", AuthController, :index
+    get "/:provider/callback", AuthController, :callback
+    delete "/logout", AuthController, :delete
+  end
 end

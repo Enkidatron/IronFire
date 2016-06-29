@@ -36,7 +36,7 @@ config :phoenix, :stacktrace_depth, 20
 config :ironfire_server, IronfireServer.Repo,
   adapter: Ecto.Adapters.Postgres,
   username: "postgres",
-  password: "postgres",
+  password: "fyDA4ySr919X",
   database: "ironfire_server_dev",
   hostname: "localhost",
   pool_size: 10

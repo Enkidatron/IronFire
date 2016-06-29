@@ -1,3 +1,7 @@
+<h2>
+  Welcome, <%= @current_user[:name] %>!
+</h2>
+
 <div class="jumbotron">
   <h2><%= gettext "Welcome to %{name}", name: "Phoenix!" %></h2>
   <p class="lead">A productive web framework that<br />does not compromise speed and maintainability.</p>
@@ -34,3 +38,5 @@
     </ul>
   </div>
 </div>
+
+<script>window.userToken = "<%= assigns[:phx_token] %>"; window.userName = "<%= @current_user[:name] %>"; window.userId = "<%= @current_user[:id] %>";</script>

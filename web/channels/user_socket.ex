@@ -3,6 +3,7 @@ defmodule IronfireServer.UserSocket do
 
   ## Channels
   # channel "rooms:*", IronfireServer.RoomChannel
+  channel "user:*", IronfireServer.UserChannel
 
   ## Transports
   transport :websocket, Phoenix.Transports.WebSocket
@@ -19,8 +20,14 @@ defmodule IronfireServer.UserSocket do
   #
   # See `Phoenix.Token` documentation for examples in
   # performing token verification on connect.
-  def connect(_params, socket) do
-    {:ok, socket}
+  def connect(%{"token" => token}, socket) do
+    # {:ok, socket}
+    case Phoenix.Token.verify(socket, "user", token) do
+      {:ok, user} ->
+        {:ok, assign(socket, :user, user)}
+      {:error, _} ->
+        :error
+    end
   end
 
   # Socket id's are topics that allow you to identify all sockets for a given user:

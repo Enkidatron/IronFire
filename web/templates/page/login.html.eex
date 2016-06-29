@@ -1,0 +1,14 @@
+<div class="jumbotron">
+	<h2>IronFire</h2>
+	<p class="lead">IronFire! Fire for your Irons! Got Irons in the Fire? Beat them into shape with IronFire!</p>
+</div>
+
+<%= if @current_user do %>
+	<p>Welcome, <%= @current_user[:name] %>!</p>
+	<p>Go to your <%= link "IronFire", to: page_path(@conn, :index) %></p>
+	<p><%= link "Logout", to: auth_path(@conn, :delete), method: :delete, class: "btn btn-danger" %></p>
+<% else %>
+  <%= link to: auth_path(@conn, :index, "google"), class: "btn btn-primary" do %>
+    Sign in with Google
+  <% end %>
+<% end %>
