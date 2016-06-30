@@ -13,6 +13,12 @@ defmodule IronfireServer.PageController do
   	|> render("login.html")
   end
 
+  def convert(conn, _params) do
+    conn 
+    |> ensure_login
+    |> render("convert.html")
+  end
+
   defp ensure_login(conn) do
 		if get_session(conn, :current_user) do
 		  conn 

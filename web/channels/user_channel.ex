@@ -20,4 +20,11 @@ defmodule IronfireServer.UserChannel do
 		# or push back an error message
 		{:noreply, socket}
 	end
+
+	def handle_in("set_settings", %{"body" => body}, socket) do
+		# write the new setting to the settings database, 
+		# create a new record for the user's settings if necessary
+		# broadcast the new settings
+		{:noreply, socket}
+	end
 end
