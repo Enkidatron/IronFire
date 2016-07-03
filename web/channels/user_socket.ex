@@ -20,14 +20,8 @@ defmodule IronfireServer.UserSocket do
   #
   # See `Phoenix.Token` documentation for examples in
   # performing token verification on connect.
-  def connect(%{"token" => token}, socket) do
-    # {:ok, socket}
-    case Phoenix.Token.verify(socket, "user", token) do
-      {:ok, user} ->
-        {:ok, assign(socket, :user, user)}
-      {:error, _} ->
-        :error
-    end
+  def connect(_params, socket) do
+    {:ok, socket}
   end
 
   # Socket id's are topics that allow you to identify all sockets for a given user:

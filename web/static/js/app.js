@@ -19,3 +19,44 @@ import "phoenix_html"
 // paths "./socket" or full ones "web/static/js/socket".
 
 // import socket from "./socket"
+
+// make all of this less terrible. By which I mean, 
+// put it in its own page-specific file somehow
+import Elm from "./main"
+const elmDiv = document.querySelector('#elm-target');
+if (elmDiv) {
+	var ironfire = Elm.Main.fullscreen({userid: window.userId, token: window.userToken});
+	ironfire.ports.focus.subscribe(function(target) {
+	    setTimeout(function() {
+	      var nodes = document.querySelectorAll(target);
+	      if (nodes.length === 1 && document.activeElement !== nodes[0]) {
+	        nodes[0].focus();
+	      }
+	    }, 50);
+	});
+	ironfire.ports.connectLocal.subscribe(function(userid){
+	  setTimeout(function() {
+	    var savedSettings = localStorage.getItem("elm-ironfire-" + userid + "-settings");
+	    if(savedSettings){
+	    	ironfire.ports.rxSettings.send(JSON.parse(savedSettings));
+	    }
+	    var savedTodos = localStorage.getItem("elm-ironfire-" + userid + "-todos");
+	    if (savedTodos) {
+	    	var todos = JSON.parse(savedTodos);
+	    	ironfire.ports.rxTodos.send(todos);
+	    }
+	  }, 50);
+	});
+	ironfire.ports.saveTodosLocal.subscribe(function(params){
+	  setTimeout(function() {
+	  	params = JSON.parse(params);
+	    localStorage.setItem("elm-ironfire-" + params.userid + "-todos", JSON.stringify(params.todos));
+	  }, 50);
+	});
+	ironfire.ports.saveSettingsLocal.subscribe(function(params){
+	  setTimeout(function() {
+	  	params = JSON.parse(params);
+	    localStorage.setItem("elm-ironfire-" + params.userid + "-settings", JSON.stringify(params.settings));
+	  }, 50);
+	});
+}
