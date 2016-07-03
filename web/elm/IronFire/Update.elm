@@ -81,7 +81,11 @@ update msg model =
             { model | viewFilter = newFilter } ! []
 
         ToggleSettings ->
-            updateSettings model (\s -> { s | show = not s.show })
+            let
+                update settings =
+                    { settings | show = not settings.show }
+            in
+                { model | settings = update model.settings } ! []
 
         SetThreshold text ->
             let
@@ -134,29 +138,74 @@ update msg model =
 
                         Err err ->
                             []
+
+                highestId =
+                    Maybe.withDefault 0 <| List.maximum <| List.map .elmId newTodos
             in
-                { model | todos = newTodos ++ model.todos } ! []
+                { model | todos = newTodos ++ model.todos, nextId = max (highestId + 1) model.nextId } ! []
 
         RxTodoPhx value ->
-            Debug.crash "RxTodoPhx"
+            let
+                updateModel m =
+                    case decodeTodo value of
+                        Ok todo ->
+                            case List.filter (.phxId >> (==) todo.phxId) m.todos of
+                                [] ->
+                                    { m | todos = { todo | elmId = model.nextId } :: m.todos, nextId = m.nextId + 1 }
 
-        RxSettingsLocal value ->
+                                _ ->
+                                    { m
+                                        | todos =
+                                            List.map
+                                                (\t ->
+                                                    if t.phxId == todo.phxId then
+                                                        { todo | elmId = t.elmId }
+                                                    else
+                                                        t
+                                                )
+                                                m.todos
+                                    }
+
+                        Err err ->
+                            Debug.log err m
+
+                model' =
+                    updateModel model
+            in
+                model' ! [ saveTodosLocal <| encodeLocalTodos model.userid model'.todos ]
+
+        RxSettings value ->
             let
                 settings' =
                     case decodeAppSettings value of
                         Ok settings ->
-                            settings
+                            { settings | show = model.settings.show }
 
                         Err err ->
                             model.settings
             in
                 { model | settings = settings' } ! []
 
-        RxSettingsPhx value ->
-            Debug.crash "RxSettingsPhx"
-
         AckTodoPhx value ->
-            Debug.crash "AckTodoPhx"
+            let
+                updateTodo =
+                    case decodeAck value of
+                        Ok ( phxId', elmId' ) ->
+                            (\todo ->
+                                if todo.elmId == elmId' then
+                                    { todo | phxId = Just phxId' }
+                                else
+                                    todo
+                            )
+
+                        Err err ->
+                            identity
+
+                newTodos =
+                    List.map updateTodo model.todos
+            in
+                { model | todos = newTodos }
+                    ! [ saveTodosLocal <| encodeLocalTodos model.userid newTodos ]
 
         PhoenixMsg msg ->
             let
@@ -322,6 +371,6 @@ subscriptions model =
         Sub.batch
             [ Time.every interval CheckForColdTodos
             , rxTodos RxTodosLocal
-            , rxSettings RxSettingsLocal
+            , rxSettings RxSettings
             , Phoenix.Socket.listen model.phxSocket PhoenixMsg
             ]

@@ -25,6 +25,7 @@ jsonTodo todo =
         [ ( "phxId", JE.int <| Maybe.withDefault -1 todo.phxId )
         , ( "elmId", JE.int todo.elmId )
         , ( "text", JE.string todo.text )
+        , ( "status", JE.string <| toString todo.status )
         , ( "timesRenewed", JE.int todo.timesRenewed )
         , ( "lastTouched", JE.float todo.lastTouched )
         ]
@@ -135,14 +136,56 @@ todoDecoder : JD.Decoder Todo
 todoDecoder =
     JD.succeed Todo
         |: (JD.maybe ("phxId" := JD.int))
-        |: ("elmId" := JD.int)
+        |: (JD.oneOf [ ("elmId" := JD.int), (JD.succeed 0) ])
         |: ("text" := JD.string)
-        |: (JD.succeed Hot)
+        |: ("status" := JD.string `JD.andThen` toStatus)
         |: ("timesRenewed" := JD.int)
         |: ("lastTouched" := JD.float)
         |: (JD.succeed Nothing)
 
 
+toStatus : String -> JD.Decoder TodoStatus
+toStatus text =
+    case text of
+        "Hot" ->
+            JD.succeed Hot
+
+        "Warm" ->
+            JD.succeed Warm
+
+        "Cool" ->
+            JD.succeed Cool
+
+        "Cold" ->
+            JD.succeed Cold
+
+        "Finished" ->
+            JD.succeed Finished
+
+        "Dead" ->
+            JD.succeed Dead
+
+        _ ->
+            JD.fail "Invalid TodoStatus"
+
+
 decodeTodos : Value -> Result String (List Todo)
 decodeTodos =
     JD.decodeValue todosDecoder
+
+
+decodeTodo : Value -> Result String Todo
+decodeTodo =
+    JD.decodeValue todoDecoder
+
+
+ackDecoder : JD.Decoder ( Int, Int )
+ackDecoder =
+    JD.succeed (,)
+        |: ("phxId" := JD.int)
+        |: ("elmId" := JD.int)
+
+
+decodeAck : Value -> Result String ( Int, Int )
+decodeAck =
+    JD.decodeValue ackDecoder

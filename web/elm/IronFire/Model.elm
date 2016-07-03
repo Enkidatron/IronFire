@@ -26,8 +26,7 @@ type Msg
     | SetColdLengthUnit String
     | RxTodosLocal JE.Value
     | RxTodoPhx JE.Value
-    | RxSettingsLocal JE.Value
-    | RxSettingsPhx JE.Value
+    | RxSettings JE.Value
     | AckTodoPhx JE.Value
     | PhoenixMsg (Phoenix.Socket.Msg Msg)
 

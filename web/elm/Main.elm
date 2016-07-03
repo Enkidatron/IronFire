@@ -9,6 +9,18 @@ import Phoenix.Socket
 import Phoenix.Channel
 
 
+--TODO:
+--add visual indication of whether a Todo is saved (phxId == Nothing if not saved)
+--add button to try to save to server (disabled if everything is saved)
+--from before:
+-- hotkeys
+-- be able to select task, only show buttons for that one
+--   hotkeys would apply to that task
+--   be able to add notes that only show when task is selected
+-- edit tasks text after creation
+-- eventually show task Temperature by color instead of words
+
+
 main : Program (Maybe Value)
 main =
     App.programWithFlags
@@ -38,7 +50,7 @@ init phxInfo =
                 |> Phoenix.Socket.withDebug
                 |> Phoenix.Socket.on "new_todo" userChannel RxTodoPhx
                 |> Phoenix.Socket.on "ack_todo" userChannel AckTodoPhx
-                |> Phoenix.Socket.on "set_settings" userChannel RxSettingsPhx
+                |> Phoenix.Socket.on "set_settings" userChannel RxSettings
 
         channel =
             Phoenix.Channel.init userChannel
