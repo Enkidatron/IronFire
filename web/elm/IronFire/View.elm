@@ -78,25 +78,56 @@ displayTodo frozen todo =
         isDisabled =
             frozen && (todo.status /= Cold)
 
+        tdTodoTextElement =
+            case ( todo.input, isAlive todo ) of
+                ( Just inputText, True ) ->
+                    td []
+                        [ input
+                            [ type' "text"
+                            , class "form-control"
+                            , id <| "todo-input-" ++ toString todo.elmId
+                            , onInput <| SetTodoInput todo.elmId
+                            , placeholder todo.text
+                            , value inputText
+                            , onEnter NoOp <| FinishTodoInput todo.elmId
+                            , onEsc NoOp <| CancelTodoInput todo.elmId
+                            ]
+                            []
+                        ]
+
+                ( Nothing, True ) ->
+                    td [ onClick <| SetTodoInput todo.elmId "" ] [ text todo.text ]
+
+                ( _, False ) ->
+                    td [] [ text todo.text ]
+
         extraButtons =
             if frozen && todo.status == Cold then
-                [ button [ type' "button", class "btn btn-warning", onClick <| RenewTodo todo ] [ text "Renew" ]
+                [ button [ type' "button", class "btn btn-warning", onClick <| RenewTodo todo.elmId ] [ text "Renew" ]
                 ]
             else
                 []
 
         buttons =
-            if isAlive todo then
-                div [ class "btn-group" ]
-                    ([ button [ type' "button", class "btn btn-info", disabled isDisabled, onClick <| TouchTodo todo ] [ text "I Worked On This" ]
-                     , button [ type' "button", class "btn btn-success", disabled isDisabled, onClick <| FinishTodo todo ] [ text "Finish" ]
-                     ]
-                        ++ extraButtons
-                        ++ [ button [ type' "button", class "btn btn-danger", disabled isDisabled, onClick <| KillTodo todo ] [ text "Kill" ]
-                           ]
-                    )
-            else
-                div [] []
+            case ( todo.input, (isAlive todo) && (not isDisabled) ) of
+                ( Nothing, True ) ->
+                    div [ class "btn-group" ]
+                        ([ button [ type' "button", class "btn btn-info", onClick <| DoWorkOnTodo todo.elmId ] [ text "I Worked On This" ]
+                         , button [ type' "button", class "btn btn-success", onClick <| FinishTodo todo.elmId ] [ text "Finish" ]
+                         ]
+                            ++ extraButtons
+                            ++ [ button [ type' "button", class "btn btn-danger", onClick <| KillTodo todo.elmId ] [ text "Kill" ]
+                               ]
+                        )
+
+                ( Just _, _ ) ->
+                    div [ class "btn-group" ]
+                        [ button [ type' "button", class "btn btn-info", onClick <| FinishTodoInput todo.elmId ] [ text "Update" ]
+                        , button [ type' "button", class "btn btn-warning", onClick <| CancelTodoInput todo.elmId ] [ text "Cancel" ]
+                        ]
+
+                ( _, _ ) ->
+                    div [] []
 
         saveText =
             case todo.phxId of
@@ -107,7 +138,7 @@ displayTodo frozen todo =
                     ""
     in
         tr []
-            [ td [] [ text todo.text ]
+            [ tdTodoTextElement
             , td [] [ text <| toString todo.status ]
             , td [] [ text <| toString todo.timesRenewed ]
             , td [] [ buttons ]
@@ -142,6 +173,18 @@ onEnter fail success =
                 fail
     in
         on "keypress" (JD.map tagger keyCode)
+
+
+onEsc : msg -> msg -> Attribute msg
+onEsc fail success =
+    let
+        tagger code =
+            if code == 27 then
+                success
+            else
+                fail
+    in
+        on "keyup" (JD.map tagger keyCode)
 
 
 displaySettingsArea : AppSettings -> Html Msg

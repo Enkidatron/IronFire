@@ -11,12 +11,15 @@ type Msg
     = NoOp
     | AddTodo
     | SetInput String
-    | TouchTodo Todo
-    | FinishTodo Todo
-    | KillTodo Todo
-    | RenewTodo Todo
+    | DoWorkOnTodo Int
+    | FinishTodo Int
+    | KillTodo Int
+    | RenewTodo Int
+    | SetTodoInput Int String
+    | CancelTodoInput Int
+    | FinishTodoInput Int
     | CheckForColdTodos Time
-    | UpdateTodoTime Todo Time
+    | UpdateTodoTimeAndSave Int Time
     | SetViewFilter ViewFilter
     | ToggleSettings
     | SetThreshold String
@@ -124,6 +127,18 @@ newModel userid' socket =
     , settings = defaultSettings
     , userid = userid'
     , phxSocket = socket
+    }
+
+
+newTodo : Int -> String -> Todo
+newTodo id text' =
+    { phxId = Nothing
+    , elmId = id
+    , text = text'
+    , status = Hot
+    , timesRenewed = 0
+    , lastTouched = 0
+    , input = Nothing
     }
 
 
