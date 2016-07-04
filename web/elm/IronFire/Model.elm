@@ -29,6 +29,7 @@ type Msg
     | RxSettings JE.Value
     | AckTodoPhx JE.Value
     | PhoenixMsg (Phoenix.Socket.Msg Msg)
+    | SaveAllUnsaved
 
 
 type TodoStatus

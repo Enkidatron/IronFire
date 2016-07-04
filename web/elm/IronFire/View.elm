@@ -26,6 +26,9 @@ view model =
 
                 ViewDead ->
                     .status >> (==) Dead
+
+        saveAllDisabled =
+            not <| List.any (.phxId >> (==) Nothing) model.todos
     in
         div [ class "container" ]
             [ table [ class "table table-condensced" ]
@@ -35,6 +38,7 @@ view model =
                         , th [] [ text "Status" ]
                         , th [] [ text "Times Renewed" ]
                         , th [] [ displayViewFilterButtons model.viewFilter ]
+                        , th [] [ button [ type' "button", class "btn btn-primary", onClick SaveAllUnsaved, disabled saveAllDisabled ] [ text "Save All" ] ]
                         ]
                     ]
                 , tbody []
@@ -93,12 +97,21 @@ displayTodo frozen todo =
                     )
             else
                 div [] []
+
+        saveText =
+            case todo.phxId of
+                Nothing ->
+                    "Unsaved"
+
+                Just _ ->
+                    ""
     in
         tr []
             [ td [] [ text todo.text ]
             , td [] [ text <| toString todo.status ]
             , td [] [ text <| toString todo.timesRenewed ]
             , td [] [ buttons ]
+            , td [] [ text saveText ]
             ]
 
 
@@ -115,6 +128,7 @@ displayInputRow inputText =
         , td []
             [ button [ type' "button", class "btn btn-primary", onClick AddTodo ] [ text "Add Todo" ]
             ]
+        , td [] []
         ]
 
 

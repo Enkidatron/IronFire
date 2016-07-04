@@ -214,6 +214,25 @@ update msg model =
             in
                 { model | phxSocket = phxSocket' } ! [ Cmd.map PhoenixMsg phxCmd ]
 
+        SaveAllUnsaved ->
+            let
+                reducer : Todo -> ( Phoenix.Socket.Socket Msg, Cmd Msg ) -> ( Phoenix.Socket.Socket Msg, Cmd Msg )
+                reducer todo ( socket, cmd ) =
+                    let
+                        push' =
+                            Phoenix.Push.init "set_todo" ("user:" ++ model.userid)
+                                |> Phoenix.Push.withPayload (jsonTodo todo)
+
+                        ( newSocket, newCmd ) =
+                            Phoenix.Socket.push push' socket
+                    in
+                        ( newSocket, Cmd.batch [ Cmd.map PhoenixMsg newCmd, cmd ] )
+
+                ( phxSocket', cmd ) =
+                    List.foldl reducer ( model.phxSocket, Cmd.none ) (List.filter (.phxId >> (==) Nothing) model.todos)
+            in
+                { model | phxSocket = phxSocket' } ! [ cmd ]
+
 
 
 -- UPDATE HELPERS

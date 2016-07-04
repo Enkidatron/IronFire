@@ -10,15 +10,13 @@ import Phoenix.Channel
 
 
 --TODO:
---add visual indication of whether a Todo is saved (phxId == Nothing if not saved)
---add button to try to save to server (disabled if everything is saved)
---from before:
+-- edit tasks text after creation
 -- hotkeys
 -- be able to select task, only show buttons for that one
 --   hotkeys would apply to that task
 --   be able to add notes that only show when task is selected
--- edit tasks text after creation
 -- eventually show task Temperature by color instead of words
+--show Phoenix connection status? have button to reconnect?
 
 
 main : Program (Maybe Value)

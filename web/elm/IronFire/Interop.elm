@@ -135,13 +135,26 @@ todosDecoder =
 todoDecoder : JD.Decoder Todo
 todoDecoder =
     JD.succeed Todo
-        |: (JD.maybe ("phxId" := JD.int))
+        |: (JD.maybe ("phxId" := JD.int) `JD.andThen` toPhxId)
         |: (JD.oneOf [ ("elmId" := JD.int), (JD.succeed 0) ])
         |: ("text" := JD.string)
         |: ("status" := JD.string `JD.andThen` toStatus)
         |: ("timesRenewed" := JD.int)
         |: ("lastTouched" := JD.float)
         |: (JD.succeed Nothing)
+
+
+toPhxId : Maybe number -> JD.Decoder (Maybe number)
+toPhxId id =
+    case id of
+        Just -1 ->
+            JD.succeed Nothing
+
+        Just num ->
+            JD.succeed (Just num)
+
+        Nothing ->
+            JD.succeed Nothing
 
 
 toStatus : String -> JD.Decoder TodoStatus
