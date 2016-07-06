@@ -166,7 +166,7 @@ update msg model =
                 highestId =
                     Maybe.withDefault 0 <| List.maximum <| List.map .elmId newTodos
             in
-                { model | todos = newTodos ++ model.todos, nextId = max (highestId + 1) model.nextId } ! []
+                { model | todos = newTodos ++ model.todos, nextId = max (highestId + 1) model.nextId } ! [ checkForFreezeNow ]
 
         RxTodoPhx value ->
             let
@@ -196,7 +196,7 @@ update msg model =
                 model' =
                     updateModel model
             in
-                model' ! [ saveTodosLocal <| encodeLocalTodos model.userid model'.todos ]
+                model' ! [ saveTodosLocal <| encodeLocalTodos model.userid model'.todos, checkForFreezeNow ]
 
         RxSettings value ->
             let

@@ -2,13 +2,4 @@ Paste copied text here:
 <input type="text" name="state" id="stateinput">
 <button onclick="startupload()">Upload!</button>
 
-<script type="text/javascript">
-	import {Socket} from "phoenix"
-
-	let socket = new Socket("/socket", {params: {token: window.userToken}})
-
-	if (window.userToken) {
-		socket.connect()
-		
-	}
-</script>
+<script>window.userId = "<%= @current_user[:id] %>"; window.userToken = "<%= @phx_token %>"</script>
