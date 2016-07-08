@@ -46,7 +46,7 @@ init phxInfo =
             "user:" ++ info.userid
 
         initPhoenix =
-            Phoenix.Socket.init "ws://localhost:4000/socket/websocket"
+            Phoenix.Socket.init "wss://whispering-wave-44301.herokuapp.com/socket/websocket"
                 |> Phoenix.Socket.on "new_todo" userChannel RxTodoPhx
                 |> Phoenix.Socket.on "ack_todo" userChannel AckTodoPhx
                 |> Phoenix.Socket.on "set_settings" userChannel RxSettings
