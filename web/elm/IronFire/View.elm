@@ -30,15 +30,20 @@ view model =
         saveAllDisabled =
             not <| List.any (.phxId >> (==) Nothing) model.todos
     in
-        div [ class "container-fluid" ]
+        div [ class "container" ]
             [ table [ class "table table-condensced" ]
+                [ tr []
+                    [ displayViewFilterButtons model.viewFilter
+                    , button [ type' "button", class "btn btn-primary pull-right", onClick SaveAllUnsaved, disabled saveAllDisabled ] [ text "Save All" ]
+                    ]
+                ]
+            , table [ class "table table-condensced" ]
                 [ thead []
                     [ tr []
                         [ th [] [ text "Task" ]
                         , th [] [ text "Status" ]
-                        , th [] [ text "Times Renewed" ]
-                        , th [] [ displayViewFilterButtons model.viewFilter ]
-                        , th [] [ button [ type' "button", class "btn btn-primary", onClick SaveAllUnsaved, disabled saveAllDisabled ] [ text "Save All" ] ]
+                        , th [] []
+                        , th [] []
                         ]
                     ]
                 , tbody []
@@ -132,15 +137,14 @@ displayTodo frozen todo =
         saveText =
             case todo.phxId of
                 Nothing ->
-                    "Unsaved"
+                    "*"
 
                 Just _ ->
                     ""
     in
         tr []
             [ tdTodoTextElement
-            , td [] [ text <| toString todo.status ]
-            , td [] [ text <| toString todo.timesRenewed ]
+            , td [] [ text <| toString todo.status, text "  ", span [ class "badge" ] [ text <| toString todo.timesRenewed ] ]
             , td [] [ buttons ]
             , td [] [ text saveText ]
             ]
@@ -154,7 +158,6 @@ displayInputRow inputText =
                 [ input [ type' "text", class "form-control", id "task-input", onInput SetInput, placeholder "New Todo", value inputText, onEnter NoOp AddTodo ] []
                 ]
             ]
-        , td [] []
         , td [] []
         , td []
             [ button [ type' "button", class "btn btn-primary", onClick AddTodo ] [ text "Add Todo" ]
