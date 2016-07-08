@@ -30,7 +30,7 @@ view model =
         saveAllDisabled =
             not <| List.any (.phxId >> (==) Nothing) model.todos
     in
-        div [ class "container" ]
+        div [ class "container-fluid" ]
             [ table [ class "table table-condensced" ]
                 [ thead []
                     [ tr []
