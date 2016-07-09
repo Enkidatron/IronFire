@@ -59,31 +59,5 @@ socket.connect()
 //   .receive("ok", resp => { console.log("Joined successfully", resp) })
 //   .receive("error", resp => { console.log("Unable to join", resp) })
 
-// stuff for the convert page:
-
-if (window.userToken && (document.querySelectorAll("#stateinput").length === 1)) {
-	socket.connect()
-	window.channel = socket.channel("user:" + window.userId, {token: window.userToken})
-	channel.join()
-	  .receive("ok", resp => { console.log("Joined successfully", resp) })
-	  .receive("error", resp => { console.log("Unable to join", resp) })
-
-}
-window.startupload = function() {
-	var nodes = document.querySelectorAll("#stateinput");
-	if (nodes.length === 1 && document.activeElement !== nodes[0]) {
-	  var state = JSON.parse(JSON.parse(nodes[0].value));
-	  console.log(state.tasks);
-	  for (var i = state.tasks.length - 1; i >= 0; i--) {
-	  	var task = state.tasks[i];
-	  	var newtodo = {phxId: -1, elmId: task.id, text: task.text, timesRenewed: task.timesRenewed, status: task.status, lastTouched: task.lastTouched}
-	  	console.log(newtodo);
-	  	channel.push("set_todo", newtodo);
-	  }
-	}
-
-}
-
-
 
 export default socket

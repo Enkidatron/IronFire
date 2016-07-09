@@ -18,7 +18,6 @@ defmodule IronfireServer.Router do
 
     get "/", PageController, :index
     get "/login", PageController, :login
-    get "/convert", PageController, :convert
   end
 
   # Other scopes may use custom stacks.
