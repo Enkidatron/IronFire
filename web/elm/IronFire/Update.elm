@@ -7,6 +7,8 @@ import String exposing (toInt)
 import Task exposing (perform)
 import Phoenix.Socket
 import Phoenix.Push
+import Keyboard
+import Char exposing (fromCode)
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -35,11 +37,11 @@ update msg model =
             ( updateSpecificTodo model id (\t -> { t | status = Hot }), updateTodoTimeAndSave id )
 
         FinishTodo id ->
-            ( updateSpecificTodo model id (\t -> { t | status = Finished }), Cmd.none )
+            ( updateSpecificTodo { model | selectedId = Nothing } id (\t -> { t | status = Finished }), Cmd.none )
                 |> withSaveTodosWhere (.elmId >> (==) id)
 
         KillTodo id ->
-            ( updateSpecificTodo model id (\t -> { t | status = Dead }), Cmd.none )
+            ( updateSpecificTodo { model | selectedId = Nothing } id (\t -> { t | status = Dead }), Cmd.none )
                 |> withSaveTodosWhere (.elmId >> (==) id)
 
         RenewTodo id ->
@@ -66,6 +68,43 @@ update msg model =
             in
                 ( updateSpecificTodo model id (\t -> { t | input = Nothing, text = getNewText t.text t.input }), Cmd.none )
                     |> withSaveTodosWhere (.elmId >> (==) id)
+
+        SelectTodo id ->
+            { model | selectedId = Just id, todos = List.map (\t -> { t | input = Nothing }) model.todos } ! []
+
+        UnselectTodo ->
+            { model | selectedId = Nothing, todos = List.map (\t -> { t | input = Nothing }) model.todos } ! []
+
+        SelectBefore time ->
+            let
+                nextSelect =
+                    case model.selectedId of
+                        Nothing ->
+                            List.head <| List.map .elmId <| List.reverse <| List.sortBy .lastTouched <| List.filter isAlive model.todos
+
+                        Just _ ->
+                            List.head <| List.map .elmId <| List.reverse <| List.sortBy .lastTouched <| List.filter (.lastTouched >> (>) time) <| List.filter isAlive model.todos
+
+                cmd =
+                    if nextSelect == Nothing then
+                        focus "#task-input"
+                    else
+                        Cmd.none
+            in
+                { model | selectedId = nextSelect } ! [ cmd ]
+
+        SelectAfter time ->
+            let
+                nextSelect =
+                    List.head <| List.map .elmId <| List.sortBy .lastTouched <| List.filter (.lastTouched >> (<) time) <| List.filter isAlive model.todos
+
+                cmd =
+                    if nextSelect == Nothing then
+                        focus "#task-input"
+                    else
+                        Cmd.none
+            in
+                { model | selectedId = nextSelect } ! [ cmd ]
 
         CheckForColdTodos time ->
             let
@@ -387,10 +426,117 @@ subscriptions model =
     let
         interval =
             (toFloat model.settings.coldCheckInterval) * (toTime model.settings.coldCheckIntervalUnit)
+
+        selectedTodoStatus =
+            List.foldl
+                (\t s ->
+                    if Just t.elmId == model.selectedId then
+                        t.status
+                    else
+                        s
+                )
+                Hot
+                model.todos
+
+        selectedTodoTime =
+            List.foldl
+                (\todo time ->
+                    if Just todo.elmId == model.selectedId then
+                        todo.lastTouched
+                    else
+                        time
+                )
+                0
+                model.todos
     in
         Sub.batch
             [ Time.every interval CheckForColdTodos
             , rxTodos RxTodosLocal
             , rxSettings RxSettings
             , Phoenix.Socket.listen model.phxSocket PhoenixMsg
+            , Keyboard.presses <| hotkeysFor model.selectedId model.status selectedTodoStatus
+            , Keyboard.ups <| selectHotkeysFor selectedTodoTime
             ]
+
+
+hotkeysFor : Maybe Int -> AppStatus -> TodoStatus -> Keyboard.KeyCode -> Msg
+hotkeysFor maybeid appstatus todostatus keycode =
+    case maybeid of
+        Nothing ->
+            NoOp
+
+        Just id ->
+            case ( appstatus, todostatus ) of
+                ( Frozen, Cold ) ->
+                    case fromCode keycode of
+                        'w' ->
+                            DoWorkOnTodo id
+
+                        'W' ->
+                            DoWorkOnTodo id
+
+                        'f' ->
+                            FinishTodo id
+
+                        'F' ->
+                            FinishTodo id
+
+                        'r' ->
+                            RenewTodo id
+
+                        'R' ->
+                            RenewTodo id
+
+                        'k' ->
+                            KillTodo id
+
+                        'K' ->
+                            KillTodo id
+
+                        _ ->
+                            NoOp
+
+                ( Frozen, _ ) ->
+                    NoOp
+
+                ( Normal, Dead ) ->
+                    NoOp
+
+                ( Normal, Finished ) ->
+                    NoOp
+
+                ( Normal, _ ) ->
+                    case fromCode keycode of
+                        'w' ->
+                            DoWorkOnTodo id
+
+                        'W' ->
+                            DoWorkOnTodo id
+
+                        'f' ->
+                            FinishTodo id
+
+                        'F' ->
+                            FinishTodo id
+
+                        'k' ->
+                            KillTodo id
+
+                        'K' ->
+                            KillTodo id
+
+                        _ ->
+                            NoOp
+
+
+selectHotkeysFor : Time -> Keyboard.KeyCode -> Msg
+selectHotkeysFor time code =
+    case code of
+        38 ->
+            SelectBefore time
+
+        40 ->
+            SelectAfter time
+
+        _ ->
+            NoOp

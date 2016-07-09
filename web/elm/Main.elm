@@ -11,9 +11,6 @@ import Phoenix.Channel
 
 {--
 TODO:
-hotkeys
- be able to select task, only show buttons for that one
-   hotkeys would apply to that task
    be able to add notes that only show when task is selected
 eventually show task Temperature by color instead of words
 show Phoenix connection status? have button to reconnect? Can't.
@@ -50,7 +47,6 @@ init phxInfo =
                 |> Phoenix.Socket.on "new_todo" userChannel RxTodoPhx
                 |> Phoenix.Socket.on "ack_todo" userChannel AckTodoPhx
                 |> Phoenix.Socket.on "set_settings" userChannel RxSettings
-                |> Phoenix.Socket.withDebug
 
         channel =
             Phoenix.Channel.init userChannel

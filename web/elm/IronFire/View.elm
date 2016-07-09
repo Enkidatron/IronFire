@@ -1,7 +1,7 @@
 module IronFire.View exposing (..)
 
 import Html exposing (..)
-import Html.Events exposing (onInput, onClick, on, keyCode)
+import Html.Events exposing (onInput, onClick, on, keyCode, onFocus)
 import Html.Attributes exposing (..)
 import IronFire.Model exposing (..)
 import Json.Decode as JD
@@ -12,6 +12,9 @@ view model =
     let
         frozen =
             model.status == Frozen
+
+        selectedId =
+            Maybe.withDefault -1 model.selectedId
 
         viewFilter =
             case model.viewFilter of
@@ -47,7 +50,7 @@ view model =
                         ]
                     ]
                 , tbody []
-                    ((List.map (displayTodo frozen) <| List.filter viewFilter <| List.sortBy .lastTouched model.todos)
+                    ((List.map (displayTodo frozen selectedId) <| List.filter viewFilter <| List.sortBy .lastTouched model.todos)
                         ++ [ displayInputRow model.inputText ]
                     )
                 ]
@@ -77,15 +80,30 @@ displayViewFilterButtons filter =
             ]
 
 
-displayTodo : Bool -> Todo -> Html Msg
-displayTodo frozen todo =
+displayTodo : Bool -> Int -> Todo -> Html Msg
+displayTodo frozen selectedId todo =
     let
-        isDisabled =
-            frozen && (todo.status /= Cold)
+        isSelected =
+            todo.elmId == selectedId
+
+        rowClass =
+            if isSelected then
+                "info"
+            else if (frozen && todo.status == Cold) then
+                "active"
+            else
+                ""
+
+        rowAttributes =
+            [ class rowClass ]
+                ++ if isSelected then
+                    []
+                   else
+                    [ onClick <| SelectTodo todo.elmId ]
 
         tdTodoTextElement =
-            case ( todo.input, isAlive todo ) of
-                ( Just inputText, True ) ->
+            case ( todo.input, isAlive todo, isSelected ) of
+                ( Just inputText, True, _ ) ->
                     td []
                         [ input
                             [ type' "text"
@@ -100,10 +118,10 @@ displayTodo frozen todo =
                             []
                         ]
 
-                ( Nothing, True ) ->
+                ( Nothing, True, True ) ->
                     td [ onClick <| SetTodoInput todo.elmId "" ] [ text todo.text ]
 
-                ( _, False ) ->
+                ( _, _, _ ) ->
                     td [] [ text todo.text ]
 
         extraButtons =
@@ -114,7 +132,7 @@ displayTodo frozen todo =
                 []
 
         buttons =
-            case ( todo.input, (isAlive todo) && (not isDisabled) ) of
+            case ( todo.input, (isSelected && (isAlive todo) && (not frozen)) || (frozen && todo.status == Cold) ) of
                 ( Nothing, True ) ->
                     div [ class "btn-group" ]
                         ([ button [ type' "button", class "btn btn-info", onClick <| DoWorkOnTodo todo.elmId ] [ text "I Worked On This" ]
@@ -142,7 +160,7 @@ displayTodo frozen todo =
                 Just _ ->
                     ""
     in
-        tr []
+        tr rowAttributes
             [ tdTodoTextElement
             , td [] [ text <| toString todo.status, text "  ", span [ class "badge" ] [ text <| toString todo.timesRenewed ] ]
             , td [] [ buttons ]
@@ -155,7 +173,7 @@ displayInputRow inputText =
     tr []
         [ td []
             [ div [ class "form-group" ]
-                [ input [ type' "text", class "form-control", id "task-input", onInput SetInput, placeholder "New Todo", value inputText, onEnter NoOp AddTodo ] []
+                [ input [ type' "text", class "form-control", id "task-input", onInput SetInput, placeholder "New Todo", value inputText, onEnter NoOp AddTodo, onFocus <| UnselectTodo ] []
                 ]
             ]
         , td [] []
@@ -178,16 +196,21 @@ onEnter fail success =
         on "keypress" (JD.map tagger keyCode)
 
 
-onEsc : msg -> msg -> Attribute msg
-onEsc fail success =
+onKeyup : Int -> msg -> msg -> Attribute msg
+onKeyup code fail success =
     let
-        tagger code =
-            if code == 27 then
+        tagger code' =
+            if code' == code then
                 success
             else
                 fail
     in
         on "keyup" (JD.map tagger keyCode)
+
+
+onEsc : msg -> msg -> Attribute msg
+onEsc =
+    onKeyup 27
 
 
 displaySettingsArea : AppSettings -> Html Msg

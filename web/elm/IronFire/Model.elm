@@ -18,6 +18,10 @@ type Msg
     | SetTodoInput Int String
     | CancelTodoInput Int
     | FinishTodoInput Int
+    | SelectTodo Int
+    | UnselectTodo
+    | SelectBefore Time
+    | SelectAfter Time
     | CheckForColdTodos Time
     | UpdateTodoTimeAndSave Int Time
     | SetViewFilter ViewFilter
@@ -87,6 +91,7 @@ type alias AppSettings =
 type alias Model =
     { inputText : String
     , todos : List Todo
+    , selectedId : Maybe Int
     , status : AppStatus
     , viewFilter : ViewFilter
     , nextId : Int
@@ -121,6 +126,7 @@ newModel : String -> Phoenix.Socket.Socket Msg -> Model
 newModel userid' socket =
     { inputText = ""
     , todos = []
+    , selectedId = Nothing
     , status = Normal
     , viewFilter = ViewAlive
     , nextId = 1
