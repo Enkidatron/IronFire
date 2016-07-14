@@ -31,7 +31,7 @@ view model =
                     .status >> (==) Dead
 
         saveAllDisabled =
-            not <| List.any (.phxId >> (==) Nothing) model.todos
+            not <| List.any (.saved >> (==) False) model.todos
     in
         div [ class "container" ]
             [ table [ class "table table-condensced" ]
@@ -50,7 +50,7 @@ view model =
                         ]
                     ]
                 , tbody []
-                    ((List.map (displayTodo frozen selectedId) <| List.filter viewFilter <| List.sortBy .lastTouched model.todos)
+                    ((List.map (displayTodo frozen selectedId) <| List.filter viewFilter <| List.sortBy .lastWorked model.todos)
                         ++ [ displayInputRow model.inputText ]
                     )
                 ]
@@ -153,12 +153,10 @@ displayTodo frozen selectedId todo =
                     div [] []
 
         saveText =
-            case todo.phxId of
-                Nothing ->
-                    "*"
-
-                Just _ ->
-                    ""
+            if todo.saved then
+                ""
+            else
+                "*"
     in
         tr rowAttributes
             [ tdTodoTextElement

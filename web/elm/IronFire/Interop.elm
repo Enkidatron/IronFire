@@ -27,7 +27,9 @@ jsonTodo todo =
         , ( "text", JE.string todo.text )
         , ( "status", JE.string <| toString todo.status )
         , ( "timesRenewed", JE.int todo.timesRenewed )
-        , ( "lastTouched", JE.float todo.lastTouched )
+        , ( "lastWorked", JE.float todo.lastWorked )
+        , ( "lastModified", JE.float todo.lastModified )
+        , ( "saved", JE.bool todo.saved )
         ]
 
 
@@ -140,8 +142,10 @@ todoDecoder =
         |: ("text" := JD.string)
         |: ("status" := JD.string `JD.andThen` toStatus)
         |: ("timesRenewed" := JD.int)
-        |: ("lastTouched" := JD.float)
+        |: (JD.oneOf [ ("lastTouched" := JD.float), ("lastWorked" := JD.float) ])
+        |: (JD.oneOf [ ("lastModified" := JD.float), (JD.succeed 0) ])
         |: (JD.succeed Nothing)
+        |: (JD.oneOf [ ("saved" := JD.bool), (JD.succeed False) ])
 
 
 toPhxId : Maybe number -> JD.Decoder (Maybe number)

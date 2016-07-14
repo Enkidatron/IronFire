@@ -23,7 +23,6 @@ type Msg
     | SelectBefore Time
     | SelectAfter Time
     | CheckForColdTodos Time
-    | UpdateTodoTimeAndSave Int Time
     | SetViewFilter ViewFilter
     | ToggleSettings
     | SetThreshold String
@@ -37,6 +36,7 @@ type Msg
     | AckTodoPhx JE.Value
     | PhoenixMsg (Phoenix.Socket.Msg Msg)
     | SaveAllUnsaved
+    | ItIsNow Time
 
 
 type TodoStatus
@@ -54,8 +54,10 @@ type alias Todo =
     , text : String
     , status : TodoStatus
     , timesRenewed : Int
-    , lastTouched : Time
+    , lastWorked : Time
+    , lastModified : Time
     , input : Maybe String
+    , saved : Bool
     }
 
 
@@ -96,8 +98,9 @@ type alias Model =
     , viewFilter : ViewFilter
     , nextId : Int
     , settings : AppSettings
-    , userid : String
+    , phxInfo : PhxInfo
     , phxSocket : Phoenix.Socket.Socket Msg
+    , currentTime : Time
     }
 
 
@@ -122,8 +125,8 @@ defaultSettings =
     }
 
 
-newModel : String -> Phoenix.Socket.Socket Msg -> Model
-newModel userid' socket =
+newModel : PhxInfo -> Phoenix.Socket.Socket Msg -> Model
+newModel info' socket =
     { inputText = ""
     , todos = []
     , selectedId = Nothing
@@ -131,20 +134,23 @@ newModel userid' socket =
     , viewFilter = ViewAlive
     , nextId = 1
     , settings = defaultSettings
-    , userid = userid'
+    , phxInfo = info'
     , phxSocket = socket
+    , currentTime = 0
     }
 
 
-newTodo : Int -> String -> Todo
-newTodo id text' =
+newTodo : Int -> String -> Time -> Todo
+newTodo id text' timestamp =
     { phxId = Nothing
     , elmId = id
     , text = text'
     , status = Hot
     , timesRenewed = 0
-    , lastTouched = 0
+    , lastWorked = timestamp
+    , lastModified = timestamp
     , input = Nothing
+    , saved = False
     }
 
 

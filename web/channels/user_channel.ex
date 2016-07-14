@@ -66,12 +66,15 @@ defmodule IronfireServer.UserChannel do
 				text: params["text"],
 				status: params["status"],
 				times_renewed: params["timesRenewed"],
-				last_touched: params["lastTouched"]
+				last_touched: params["lastWorked"],
+				elm_last_modified: params["lastModified"]
 			}
 		)
-		if changeset.valid? do
+		if changeset.valid? && params["lastModified"] >= todo.elm_last_modified do
 			newTodo = Repo.update!(changeset)
 			broadcast! socket, "new_todo", (todoJSON newTodo)
+		else
+			push socket, "new_todo", (todoJSON todo)
 		end
 		{:noreply, socket}
 	end
@@ -114,7 +117,9 @@ defmodule IronfireServer.UserChannel do
 			text: todo.text,
 			status: todo.status,
 			timesRenewed: todo.times_renewed,
-			lastTouched: todo.last_touched
+			lastWorked: todo.last_touched,
+			lastModified: todo.elm_last_modified,
+			saved: true
 		}
 	end
 

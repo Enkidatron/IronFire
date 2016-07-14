@@ -56,7 +56,7 @@ init phxInfo =
             Phoenix.Socket.join channel initPhoenix
 
         model =
-            newModel info.userid phxSocket'
+            newModel info phxSocket'
     in
         model
             ! [ Cmd.map PhoenixMsg phxCmd
