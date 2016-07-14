@@ -93,7 +93,7 @@ update msg model =
                     if nextSelect == Nothing then
                         focus "#task-input"
                     else
-                        Cmd.none
+                        blur "#task-input"
             in
                 { model | selectedId = nextSelect } ! [ cmd ]
 
@@ -106,7 +106,7 @@ update msg model =
                     if nextSelect == Nothing then
                         focus "#task-input"
                     else
-                        Cmd.none
+                        blur "#task-input"
             in
                 { model | selectedId = nextSelect } ! [ cmd ]
 
@@ -120,13 +120,13 @@ update msg model =
                         (\t ->
                             if isAlive t then
                                 if (time - t.lastWorked > coldLength) then
-                                    { t | status = Cold, lastModified = model.currentTime, saved = False }
+                                    { t | status = Cold }
                                 else if (time - t.lastWorked > coldLength * (2 / 3)) then
-                                    { t | status = Cool, lastModified = model.currentTime, saved = False }
+                                    { t | status = Cool }
                                 else if (time - t.lastWorked > coldLength * (1 / 3)) then
-                                    { t | status = Warm, lastModified = model.currentTime, saved = False }
+                                    { t | status = Warm }
                                 else
-                                    { t | status = Hot, lastModified = model.currentTime, saved = False }
+                                    { t | status = Hot }
                             else
                                 t
                         )
@@ -216,7 +216,7 @@ update msg model =
                 model' =
                     case decodeTodo value of
                         Ok phxTodo ->
-                            case List.filter (shouldUpdate phxTodo) model.todos of
+                            case List.filter (.phxId >> (==) phxTodo.phxId) model.todos of
                                 [] ->
                                     { model | todos = { phxTodo | elmId = model.nextId } :: model.todos, nextId = model.nextId + 1 }
 
@@ -225,7 +225,7 @@ update msg model =
                                         | todos =
                                             List.map
                                                 (\t ->
-                                                    if t.phxId == phxTodo.phxId then
+                                                    if shouldUpdate phxTodo t then
                                                         { phxTodo | elmId = t.elmId }
                                                     else
                                                         t
@@ -279,7 +279,7 @@ update msg model =
                 { model | phxSocket = phxSocket' } ! [ Cmd.map PhoenixMsg phxCmd ]
 
         SaveAllUnsaved ->
-            ( model, Cmd.none ) |> withSaveTodosWhere (.phxId >> (==) Nothing)
+            ( model, Cmd.none ) |> withSaveTodosWhere (.saved >> (==) False)
 
         ItIsNow time ->
             { model | currentTime = time } ! []
@@ -396,6 +396,9 @@ updateSettings model update =
 port focus : String -> Cmd msg
 
 
+port blur : String -> Cmd msg
+
+
 port connectLocal : String -> Cmd msg
 
 
@@ -447,16 +450,37 @@ subscriptions model =
                 )
                 0
                 model.todos
+
+        selectedTodoInput =
+            List.foldl
+                (\todo input ->
+                    if Just todo.elmId == model.selectedId then
+                        todo.input
+                    else
+                        input
+                )
+                Nothing
+                model.todos
+
+        hotkeys =
+            case selectedTodoInput of
+                Nothing ->
+                    [ Keyboard.presses <| hotkeysFor model.selectedId model.status selectedTodoStatus
+                    , Keyboard.ups <| selectHotkeysFor selectedTodoTime
+                    ]
+
+                Just _ ->
+                    []
     in
         Sub.batch
-            [ Time.every interval CheckForColdTodos
-            , Time.every second ItIsNow
-            , rxTodos RxTodosLocal
-            , rxSettings RxSettings
-            , Phoenix.Socket.listen model.phxSocket PhoenixMsg
-            , Keyboard.presses <| hotkeysFor model.selectedId model.status selectedTodoStatus
-            , Keyboard.ups <| selectHotkeysFor selectedTodoTime
-            ]
+            ([ Time.every interval CheckForColdTodos
+             , Time.every second ItIsNow
+             , rxTodos RxTodosLocal
+             , rxSettings RxSettings
+             , Phoenix.Socket.listen model.phxSocket PhoenixMsg
+             ]
+                ++ hotkeys
+            )
 
 
 hotkeysFor : Maybe Int -> AppStatus -> TodoStatus -> Keyboard.KeyCode -> Msg

@@ -70,7 +70,7 @@ defmodule IronfireServer.UserChannel do
 				elm_last_modified: params["lastModified"]
 			}
 		)
-		if changeset.valid? && params["lastModified"] >= todo.elm_last_modified do
+		if changeset.valid? && (params["lastModified"] >= todo.elm_last_modified || todo.elm_last_modified == nil) do
 			newTodo = Repo.update!(changeset)
 			broadcast! socket, "new_todo", (todoJSON newTodo)
 		else

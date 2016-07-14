@@ -34,6 +34,14 @@ if (elmDiv) {
 	      }
 	    }, 50);
 	});
+	ironfire.ports.blur.subscribe(function(target) {
+		setTimeout(function() {
+			var nodes = document.querySelectorAll(target);
+			if (nodes.length === 1 && document.activeElement === nodes[0]) {
+				nodes[0].blur();
+			}
+		}, 50);
+	});
 	ironfire.ports.connectLocal.subscribe(function(userid){
 	  setTimeout(function() {
 	    var savedSettings = localStorage.getItem("elm-ironfire-" + userid + "-settings");
