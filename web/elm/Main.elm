@@ -15,6 +15,13 @@ TODO:
 eventually show task Temperature by color instead of words
 show Phoenix connection status? have button to reconnect? Can't.
 Separate update settings from saving settings functionality?
+
+Have javascript boot code just fetch our locally saved settings
+  and todos before booting us, and pass them in with the phxInfo
+  Then we can just initialize our todos to that value, and don't
+  have to worry about collisions with phoenix tasks
+There are problems with the hotkeys.
+  when we select a task, we need to defocus the input area, and vice versa
 --}
 
 
