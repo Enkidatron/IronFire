@@ -21,6 +21,9 @@ Have javascript boot code just fetch our locally saved settings
   and todos before booting us, and pass them in with the phxInfo
   Then we can just initialize our todos to that value, and don't
   have to worry about collisions with phoenix tasks
+
+Check for freeze or unfreeze on receiving new settings
+disable/change hotkeys when settings are open?
 --}
 
 

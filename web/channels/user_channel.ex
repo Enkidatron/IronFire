@@ -48,7 +48,8 @@ defmodule IronfireServer.UserChannel do
 				text: params["text"],
 				status: params["status"],
 				times_renewed: params["timesRenewed"],
-				last_touched: params["lastTouched"]
+				last_touched: params["lastWorked"],
+				elm_last_modified: params["lastModified"]
 			}
 		)
 		if changeset.valid? do
