@@ -48,7 +48,7 @@ update msg model =
                 |> withSaveTodosWhere (.elmId >> (==) id)
 
         RenewTodo id ->
-            ( updateSpecificTodo model id (\t -> { t | status = Hot, timesRenewed = t.timesRenewed + 1, lastModified = model.currentTime, saved = False }), Cmd.none )
+            ( updateSpecificTodo model id (\t -> { t | status = Hot, timesRenewed = t.timesRenewed + 1, lastWorked = model.currentTime, lastModified = model.currentTime, saved = False }), Cmd.none )
                 |> withSaveTodosWhere (.elmId >> (==) id)
 
         SetTodoInput id input ->
