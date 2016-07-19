@@ -7,7 +7,6 @@ defmodule IronfireServer.UserChannel do
 	alias IronfireServer.Todo
 
 	def join("user:" <> requested_id, %{"token" => token }, socket) do
-		IO.puts inspect socket
     case Phoenix.Token.verify(socket, "user", token) do
       {:ok, user} ->
         if requested_id == user[:id] do
