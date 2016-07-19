@@ -463,14 +463,17 @@ subscriptions model =
                 model.todos
 
         hotkeys =
-            case selectedTodoInput of
-                Nothing ->
-                    [ Keyboard.presses <| hotkeysFor model.selectedId model.status selectedTodoStatus
-                    , Keyboard.ups <| selectHotkeysFor selectedTodoTime
-                    ]
+            if model.settings.show then
+                []
+            else
+                case selectedTodoInput of
+                    Nothing ->
+                        [ Keyboard.presses <| hotkeysFor model.selectedId model.status selectedTodoStatus
+                        , Keyboard.ups <| selectHotkeysFor selectedTodoTime
+                        ]
 
-                Just _ ->
-                    []
+                    Just _ ->
+                        []
     in
         Sub.batch
             ([ Time.every interval CheckForColdTodos
