@@ -9,24 +9,6 @@ import Phoenix.Socket
 import Phoenix.Channel
 
 
-{--
-TODO:
-   be able to add notes that only show when task is selected
-eventually show task Temperature by color instead of words
-show Phoenix connection status? Can't.
-Have button to reconnect to phoenix?
-Separate update settings from saving settings functionality?
-
-Have javascript boot code just fetch our locally saved settings
-  and todos before booting us, and pass them in with the phxInfo
-  Then we can just initialize our todos to that value, and don't
-  have to worry about collisions with phoenix tasks
-
-Check for freeze or unfreeze on receiving new settings
-disable/change hotkeys when settings are open?
---}
-
-
 main : Program (Maybe Value)
 main =
     App.programWithFlags
