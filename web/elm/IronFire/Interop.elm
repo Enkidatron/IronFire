@@ -4,6 +4,7 @@ import IronFire.Model exposing (..)
 import Json.Encode as JE
 import Json.Decode as JD exposing ((:=))
 import Json.Decode.Extra exposing ((|:))
+import String
 
 
 type alias Value =
@@ -29,7 +30,7 @@ jsonTodo todo =
         , ( "timesRenewed", JE.int todo.timesRenewed )
         , ( "lastWorked", JE.float todo.lastWorked )
         , ( "lastModified", JE.float todo.lastModified )
-        , ( "saved", JE.bool todo.saved )
+        , ( "saveStatus", JE.string <| toString todo.saveStatus )
         ]
 
 
@@ -145,7 +146,7 @@ todoDecoder =
         |: (JD.oneOf [ ("lastTouched" := JD.float), ("lastWorked" := JD.float) ])
         |: (JD.oneOf [ ("lastModified" := JD.float), (JD.succeed 0) ])
         |: (JD.succeed Nothing)
-        |: (JD.oneOf [ ("saved" := JD.bool), (JD.succeed False) ])
+        |: (JD.oneOf [ ("saveStatus" := JD.string `JD.andThen` stringToSaveStatus), ("phxId" := JD.int `JD.andThen` phxIdToSaveStatus), (JD.succeed Unsaved) ])
 
 
 toPhxId : Maybe number -> JD.Decoder (Maybe number)
@@ -184,6 +185,32 @@ toStatus text =
 
         _ ->
             JD.fail "Invalid TodoStatus"
+
+
+phxIdToSaveStatus : Int -> JD.Decoder TaskSaveStatus
+phxIdToSaveStatus phxId =
+    case phxId of
+        -1 ->
+            JD.succeed Unsaved
+
+        _ ->
+            JD.succeed Saved
+
+
+stringToSaveStatus : String -> JD.Decoder TaskSaveStatus
+stringToSaveStatus text =
+    case (String.toLower text) of
+        "unsaved" ->
+            JD.succeed Unsaved
+
+        "modified" ->
+            JD.succeed Modified
+
+        "saved" ->
+            JD.succeed Saved
+
+        _ ->
+            JD.fail "Invalid saveStatus"
 
 
 decodeTodos : Value -> Result String (List Todo)

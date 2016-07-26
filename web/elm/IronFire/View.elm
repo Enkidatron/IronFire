@@ -31,7 +31,7 @@ view model =
                     .status >> (==) Dead
 
         saveAllDisabled =
-            not <| List.any (.saved >> (==) False) model.todos
+            not <| List.any (.saveStatus >> (/=) Saved) model.todos
     in
         div [ class "container" ]
             [ table [ class "table table-condensced" ]
@@ -153,10 +153,15 @@ displayTodo frozen selectedId todo =
                     div [] []
 
         saveText =
-            if todo.saved then
-                ""
-            else
-                "*"
+            case todo.saveStatus of
+                Saved ->
+                    ""
+
+                Modified ->
+                    "*"
+
+                Unsaved ->
+                    "!"
     in
         tr rowAttributes
             [ tdTodoTextElement

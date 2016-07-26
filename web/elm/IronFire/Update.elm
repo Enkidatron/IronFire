@@ -30,26 +30,26 @@ update msg model =
                       }
                     , focus "#task-input"
                     )
-                        |> withSaveTodosWhere (.elmId >> (==) model.nextId)
+                        |> withSaveNewTodosWhere (.elmId >> (==) model.nextId)
 
         SetInput text ->
             { model | inputText = text } ! []
 
         DoWorkOnTodo id ->
-            ( updateSpecificTodo model id (\t -> { t | status = Hot, lastWorked = model.currentTime, lastModified = model.currentTime, saved = False }), Cmd.none )
-                |> withSaveTodosWhere (.elmId >> (==) id)
+            ( updateSpecificTodo model id (\t -> { t | status = Hot, lastWorked = model.currentTime, lastModified = model.currentTime, saveStatus = modifySaveStatus t.saveStatus }), Cmd.none )
+                |> withSaveModifiedTodosWhere (.elmId >> (==) id)
 
         FinishTodo id ->
-            ( updateSpecificTodo { model | selectedId = Nothing } id (\t -> { t | status = Finished, lastModified = model.currentTime, saved = False }), Cmd.none )
-                |> withSaveTodosWhere (.elmId >> (==) id)
+            ( updateSpecificTodo { model | selectedId = Nothing } id (\t -> { t | status = Finished, lastModified = model.currentTime, saveStatus = modifySaveStatus t.saveStatus }), Cmd.none )
+                |> withSaveModifiedTodosWhere (.elmId >> (==) id)
 
         KillTodo id ->
-            ( updateSpecificTodo { model | selectedId = Nothing } id (\t -> { t | status = Dead, lastModified = model.currentTime, saved = False }), Cmd.none )
-                |> withSaveTodosWhere (.elmId >> (==) id)
+            ( updateSpecificTodo { model | selectedId = Nothing } id (\t -> { t | status = Dead, lastModified = model.currentTime, saveStatus = modifySaveStatus t.saveStatus }), Cmd.none )
+                |> withSaveModifiedTodosWhere (.elmId >> (==) id)
 
         RenewTodo id ->
-            ( updateSpecificTodo model id (\t -> { t | status = Hot, timesRenewed = t.timesRenewed + 1, lastWorked = model.currentTime, lastModified = model.currentTime, saved = False }), Cmd.none )
-                |> withSaveTodosWhere (.elmId >> (==) id)
+            ( updateSpecificTodo model id (\t -> { t | status = Hot, timesRenewed = t.timesRenewed + 1, lastWorked = model.currentTime, lastModified = model.currentTime, saveStatus = modifySaveStatus t.saveStatus }), Cmd.none )
+                |> withSaveModifiedTodosWhere (.elmId >> (==) id)
 
         SetTodoInput id input ->
             ( updateSpecificTodo model id (\t -> { t | input = Just input }), focus <| "#todo-input-" ++ toString id )
@@ -70,8 +70,8 @@ update msg model =
                         Just str ->
                             str
             in
-                ( updateSpecificTodo model id (\t -> { t | input = Nothing, text = getNewText t.text t.input, lastModified = model.currentTime, saved = False }), Cmd.none )
-                    |> withSaveTodosWhere (.elmId >> (==) id)
+                ( updateSpecificTodo model id (\t -> { t | input = Nothing, text = getNewText t.text t.input, lastModified = model.currentTime, saveStatus = modifySaveStatus t.saveStatus }), Cmd.none )
+                    |> withSaveModifiedTodosWhere (.elmId >> (==) id)
 
         SelectTodo id ->
             { model | selectedId = Just id, todos = List.map (\t -> { t | input = Nothing }) model.todos } ! []
@@ -139,7 +139,7 @@ update msg model =
                         Normal
             in
                 ( { model | todos = newTodos, status = newStatus }, Cmd.none )
-                    |> withSaveTodosWhere (.saved >> (==) False)
+                    |> withSaveModifiedTodosWhere (.saveStatus >> (==) Modified)
 
         SetViewFilter newFilter ->
             { model | viewFilter = newFilter } ! []
@@ -257,7 +257,7 @@ update msg model =
                         Ok ( phxId', elmId' ) ->
                             (\todo ->
                                 if todo.elmId == elmId' then
-                                    { todo | phxId = Just phxId', saved = True }
+                                    { todo | phxId = Just phxId', saveStatus = Saved }
                                 else
                                     todo
                             )
@@ -279,7 +279,9 @@ update msg model =
                 { model | phxSocket = phxSocket' } ! [ Cmd.map PhoenixMsg phxCmd ]
 
         SaveAllUnsaved ->
-            ( model, Cmd.none ) |> withSaveTodosWhere (.saved >> (==) False)
+            ( model, Cmd.none )
+                |> withSaveModifiedTodosWhere (.saveStatus >> (==) Modified)
+                |> withSaveNewTodosWhere (.saveStatus >> (==) Unsaved)
 
         ItIsNow time ->
             { model | currentTime = time } ! []
@@ -329,6 +331,16 @@ getTimeIntervalFromText text =
             Debug.crash "Tried to convert an invalid string into a TimeInterval"
 
 
+modifySaveStatus : TaskSaveStatus -> TaskSaveStatus
+modifySaveStatus status =
+    case status of
+        Unsaved ->
+            Unsaved
+
+        _ ->
+            Modified
+
+
 updateSpecificTodo : Model -> Int -> (Todo -> Todo) -> Model
 updateSpecificTodo model id updateTodo =
     let
@@ -345,14 +357,14 @@ updateSpecificTodo model id updateTodo =
         checkUnfreeze { model | todos = newTodos }
 
 
-withSaveTodosWhere : (Todo -> Bool) -> ( Model, Cmd Msg ) -> ( Model, Cmd Msg )
-withSaveTodosWhere gate ( model, cmdMsg ) =
+withSaveTodos : String -> (Todo -> Bool) -> ( Model, Cmd Msg ) -> ( Model, Cmd Msg )
+withSaveTodos message gate ( model, cmdMsg ) =
     let
         reducer : Todo -> ( Phoenix.Socket.Socket Msg, Cmd Msg ) -> ( Phoenix.Socket.Socket Msg, Cmd Msg )
         reducer todo ( socket, cmd ) =
             let
                 push' =
-                    Phoenix.Push.init "set_todo" ("user:" ++ model.phxInfo.userid)
+                    Phoenix.Push.init message ("user:" ++ model.phxInfo.userid)
                         |> Phoenix.Push.withPayload (jsonTodo todo)
 
                 ( newSocket, newCmd ) =
@@ -364,6 +376,16 @@ withSaveTodosWhere gate ( model, cmdMsg ) =
             List.foldl reducer ( model.phxSocket, Cmd.none ) (List.filter gate model.todos)
     in
         { model | phxSocket = phxSocket' } ! [ cmdMsg, cmd', saveTodosLocal <| encodeLocalTodos model.phxInfo.userid model.todos ]
+
+
+withSaveModifiedTodosWhere : (Todo -> Bool) -> ( Model, Cmd Msg ) -> ( Model, Cmd Msg )
+withSaveModifiedTodosWhere =
+    withSaveTodos "update_todo"
+
+
+withSaveNewTodosWhere : (Todo -> Bool) -> ( Model, Cmd Msg ) -> ( Model, Cmd Msg )
+withSaveNewTodosWhere =
+    withSaveTodos "new_todo"
 
 
 updateSettings : Model -> (AppSettings -> AppSettings) -> ( Model, Cmd Msg )

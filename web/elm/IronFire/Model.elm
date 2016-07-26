@@ -48,6 +48,12 @@ type TodoStatus
     | Dead
 
 
+type TaskSaveStatus
+    = Unsaved
+    | Modified
+    | Saved
+
+
 type alias Todo =
     { phxId : Maybe Int
     , elmId : Int
@@ -57,7 +63,7 @@ type alias Todo =
     , lastWorked : Time
     , lastModified : Time
     , input : Maybe String
-    , saved : Bool
+    , saveStatus : TaskSaveStatus
     }
 
 
@@ -110,10 +116,6 @@ type alias PhxInfo =
     }
 
 
-
---, phxSocket : Phoenix.Socket.Socket Msg
-
-
 defaultSettings : AppSettings
 defaultSettings =
     { show = False
@@ -150,7 +152,7 @@ newTodo id text' timestamp =
     , lastWorked = timestamp
     , lastModified = timestamp
     , input = Nothing
-    , saved = False
+    , saveStatus = Unsaved
     }
 
 

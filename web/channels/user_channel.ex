@@ -37,9 +37,8 @@ defmodule IronfireServer.UserChannel do
 		{:noreply, socket}
 	end
 
-	def handle_in("set_todo", %{"phxId" => -1} = params, socket) do
-		# The -1 id indicates that it hasn't been saved before, 
-		# so we should add it to our Repo, acknowledge that it was created
+	def handle_in("new_todo", params, socket) do
+		# We should add it to our Repo, acknowledge that it was created
 		# (the acknowledgement allows the client to set the phxId)
 		# and finally broadcast the new task to all connected clients
 		changeset = Todo.changeset(%Todo{}, 
@@ -58,9 +57,9 @@ defmodule IronfireServer.UserChannel do
 		end
 		{:noreply, socket}
 	end
-	def handle_in("set_todo", params, socket) do
-		# It is not a new todo (or else would have been caught above)
-		# so just find it in the Repo, update it, and tell everyone
+
+	def handle_in("update_todo", params, socket) do
+		# Find it in the Repo, update it, and tell everyone
 		todo = Repo.get!(Todo, params["phxId"])
 		changeset = Todo.changeset(todo, 
 			%{user_id: socket.assigns.user[:id],
@@ -120,7 +119,7 @@ defmodule IronfireServer.UserChannel do
 			timesRenewed: todo.times_renewed,
 			lastWorked: todo.last_touched,
 			lastModified: todo.elm_last_modified,
-			saved: true
+			saveStatus: "saved"
 		}
 	end
 
