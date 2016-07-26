@@ -14,8 +14,8 @@ defmodule IronfireServer.Todo do
     timestamps
   end
 
-  @required_fields ~w(user_id text status times_renewed last_touched elm_last_modified socket_id elm_id)
-  @optional_fields ~w()
+  @required_fields ~w(user_id text status times_renewed last_touched elm_last_modified)
+  @optional_fields ~w(socket_id elm_id)
 
   @doc """
   Creates a changeset based on the `model` and `params`.

@@ -138,7 +138,7 @@ update msg model =
                     else
                         Normal
             in
-                ( { model | todos = newTodos, status = newStatus }, Cmd.none )
+                ( checkUnfreeze { model | todos = newTodos, status = newStatus }, Cmd.none )
                     |> withSaveModifiedTodosWhere (.saveStatus >> (==) Modified)
 
         SetViewFilter newFilter ->
@@ -248,7 +248,7 @@ update msg model =
                         Err err ->
                             model.settings
             in
-                { model | settings = settings' } ! []
+                { model | settings = settings' } ! [ checkForFreezeNow ]
 
         AckTodoPhx value ->
             let
