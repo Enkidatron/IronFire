@@ -8,11 +8,13 @@ defmodule IronfireServer.Todo do
     field :times_renewed, :integer
     field :last_touched, :float
     field :elm_last_modified, :float
+    field :socket_id, :integer
+    field :elm_id, :integer
 
     timestamps
   end
 
-  @required_fields ~w(user_id text status times_renewed last_touched elm_last_modified)
+  @required_fields ~w(user_id text status times_renewed last_touched elm_last_modified socket_id elm_id)
   @optional_fields ~w()
 
   @doc """

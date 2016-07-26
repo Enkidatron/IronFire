@@ -41,19 +41,24 @@ defmodule IronfireServer.UserChannel do
 		# We should add it to our Repo, acknowledge that it was created
 		# (the acknowledgement allows the client to set the phxId)
 		# and finally broadcast the new task to all connected clients
-		changeset = Todo.changeset(%Todo{}, 
-			%{user_id: socket.assigns.user[:id],
-				text: params["text"],
-				status: params["status"],
-				times_renewed: params["timesRenewed"],
-				last_touched: params["lastWorked"],
-				elm_last_modified: params["lastModified"]
-			}
-		)
-		if changeset.valid? do
-			newTodo = Repo.insert!(changeset)
-			push socket, "ack_todo", %{phxId: newTodo.id, elmId: params["elmId"]}
-			broadcast socket, "new_todo", (todoJSON newTodo)
+		todo = Repo.get_by(Todo, [socket_id: socket.assigns.socket_id, elm_id: params["elmId"]])
+		if todo == nil do 
+			changeset = Todo.changeset(%Todo{}, 
+				%{user_id: socket.assigns.user[:id],
+					text: params["text"],
+					status: params["status"],
+					times_renewed: params["timesRenewed"],
+					last_touched: params["lastWorked"],
+					elm_last_modified: params["lastModified"],
+					socket_id: socket.assigns.socket_id,
+					elm_id: params["elmId"]
+				}
+			)
+			if changeset.valid? do
+				newTodo = Repo.insert!(changeset)
+				push socket, "ack_todo", %{phxId: newTodo.id, elmId: params["elmId"]}
+				broadcast socket, "new_todo", (todoJSON newTodo)
+			end
 		end
 		{:noreply, socket}
 	end
