@@ -302,6 +302,16 @@ update msg model =
         ItIsNow time ->
             { model | currentTime = time } ! []
 
+        ClearLocalTodos ->
+            let
+                push =
+                    Phoenix.Push.init "get_all_todos" ("user:" ++ model.phxInfo.userid)
+
+                ( phxSocket', phxCmd ) =
+                    Phoenix.Socket.push push model.phxSocket
+            in
+                { model | todos = [] } ! [ Cmd.map PhoenixMsg phxCmd, saveTodosLocal <| encodeLocalTodos model.phxInfo.userid [] ]
+
 
 
 -- UPDATE HELPERS

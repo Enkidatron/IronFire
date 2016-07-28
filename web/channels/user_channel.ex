@@ -29,11 +29,20 @@ defmodule IronfireServer.UserChannel do
 				push socket, "set_settings", (settingsJSON settings)
 			_ -> {}
 		end
+		push_all_todos(socket)
+		{:noreply, socket}
+	end
+
+	defp push_all_todos(socket) do
 		todos = Repo.all(from t in Todo, where: t.user_id == ^socket.assigns.user[:id])
 		case todos do
 			nil -> {:noreply, socket}
-			_ -> Enum.map todos, fn todo -> push socket, "new_todo", (todoJSON todo) end		  
+			_ -> Enum.map todos, fn todo -> push socket, "new_todo", (todoJSON todo) end 
 		end
+	end
+
+	def handle_in("get_all_todos", _params, socket) do
+		push_all_todos(socket)
 		{:noreply, socket}
 	end
 
@@ -120,9 +129,9 @@ defmodule IronfireServer.UserChannel do
 	end
 
 	defp todoJSON(%Todo{} = todo) do
-		notes = case todo.notes do
-		   nil -> ""
-		   _ -> todo.notes
+		notes = case Map.fetch(todo, :notes) do
+		   {:ok, value} -> value 
+		   :error -> ""
 		end
 		%{phxId: todo.id, 
 			text: todo.text,

@@ -41,6 +41,7 @@ type Msg
     | PhoenixMsg (Phoenix.Socket.Msg Msg)
     | SaveAllUnsaved
     | ItIsNow Time
+    | ClearLocalTodos
 
 
 type TodoStatus

@@ -319,4 +319,5 @@ displaySettingsPanelBody settings =
                     ]
                 ]
             ]
+        , button [ type' "button", class "btn btn-danger", onClick ClearLocalTodos ] [ text "Clear Local Todos" ]
         ]
