@@ -16,10 +16,14 @@ type Msg
     | KillTodo Int
     | RenewTodo Int
     | SetTodoInput Int String
+    | SetTodoNotes Int String
     | CancelTodoInput Int
     | FinishTodoInput Int
     | SelectTodo Int
     | UnselectTodo
+    | FocusNotes Int
+    | BlurNotes Int
+    | SetEditingNotes Bool
     | SelectBefore Time
     | SelectAfter Time
     | CheckForColdTodos Time
@@ -58,6 +62,7 @@ type alias Todo =
     { phxId : Maybe Int
     , elmId : Int
     , text : String
+    , notes : String
     , status : TodoStatus
     , timesRenewed : Int
     , lastWorked : Time
@@ -107,6 +112,7 @@ type alias Model =
     , phxInfo : PhxInfo
     , phxSocket : Phoenix.Socket.Socket Msg
     , currentTime : Time
+    , editingNotes : Bool
     }
 
 
@@ -139,6 +145,7 @@ newModel info' socket =
     , phxInfo = info'
     , phxSocket = socket
     , currentTime = 0
+    , editingNotes = False
     }
 
 
@@ -147,6 +154,7 @@ newTodo id text' timestamp =
     { phxId = Nothing
     , elmId = id
     , text = text'
+    , notes = ""
     , status = Hot
     , timesRenewed = 0
     , lastWorked = timestamp

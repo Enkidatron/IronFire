@@ -54,6 +54,9 @@ update msg model =
         SetTodoInput id input ->
             ( updateSpecificTodo model id (\t -> { t | input = Just input }), focus <| "#todo-input-" ++ toString id )
 
+        SetTodoNotes id notes' ->
+            ( updateSpecificTodo model id (\t -> { t | notes = notes', lastModified = model.currentTime, saveStatus = modifySaveStatus t.saveStatus }), Cmd.none )
+
         CancelTodoInput id ->
             ( updateSpecificTodo model id (\t -> { t | input = Nothing }), Cmd.none )
 
@@ -78,6 +81,19 @@ update msg model =
 
         UnselectTodo ->
             { model | selectedId = Nothing, todos = List.map (\t -> { t | input = Nothing }) model.todos } ! []
+
+        FocusNotes id ->
+            model ! [ focus <| "#todo-notes-" ++ toString id ]
+
+        BlurNotes id ->
+            model
+                ! [ blur <| "#todo-notes-" ++ toString id ]
+                |> withSaveModifiedTodosWhere (.elmId >> (==) id)
+
+        SetEditingNotes editing ->
+            { model | editingNotes = editing }
+                ! []
+                |> withSaveModifiedTodosWhere (.saveStatus >> (==) Modified)
 
         SelectBefore time ->
             let
@@ -485,7 +501,7 @@ subscriptions model =
                 model.todos
 
         hotkeys =
-            if model.settings.show then
+            if model.settings.show || model.editingNotes then
                 []
             else
                 case selectedTodoInput of
@@ -542,6 +558,9 @@ hotkeysFor maybeid appstatus todostatus keycode =
                         'K' ->
                             KillTodo id
 
+                        ' ' ->
+                            FocusNotes id
+
                         _ ->
                             NoOp
 
@@ -573,6 +592,9 @@ hotkeysFor maybeid appstatus todostatus keycode =
 
                         'K' ->
                             KillTodo id
+
+                        ' ' ->
+                            FocusNotes id
 
                         _ ->
                             NoOp

@@ -51,7 +51,8 @@ defmodule IronfireServer.UserChannel do
 					last_touched: params["lastWorked"],
 					elm_last_modified: params["lastModified"],
 					socket_id: socket.assigns.socket_id,
-					elm_id: params["elmId"]
+					elm_id: params["elmId"],
+					notes: params["notes"]
 				}
 			)
 			if changeset.valid? do
@@ -72,7 +73,8 @@ defmodule IronfireServer.UserChannel do
 				status: params["status"],
 				times_renewed: params["timesRenewed"],
 				last_touched: params["lastWorked"],
-				elm_last_modified: params["lastModified"]
+				elm_last_modified: params["lastModified"],
+				notes: params["notes"]
 			}
 		)
 		if changeset.valid? && (params["lastModified"] >= todo.elm_last_modified || todo.elm_last_modified == nil) do
@@ -118,13 +120,18 @@ defmodule IronfireServer.UserChannel do
 	end
 
 	defp todoJSON(%Todo{} = todo) do
+		notes = case todo.notes do
+		   nil -> ""
+		   _ -> todo.notes
+		end
 		%{phxId: todo.id, 
 			text: todo.text,
 			status: todo.status,
 			timesRenewed: todo.times_renewed,
 			lastWorked: todo.last_touched,
 			lastModified: todo.elm_last_modified,
-			saveStatus: "saved"
+			saveStatus: "saved",
+			notes: notes
 		}
 	end
 

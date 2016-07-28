@@ -1,8 +1,10 @@
 module IronFire.View exposing (..)
 
 import Html exposing (..)
-import Html.Events exposing (onInput, onClick, on, keyCode, onFocus)
+import Html.Events exposing (onInput, onClick, on, keyCode, onFocus, onBlur)
 import Html.Attributes exposing (..)
+import Svg
+import Svg.Attributes as SA
 import IronFire.Model exposing (..)
 import Json.Decode as JD
 
@@ -47,10 +49,11 @@ view model =
                         , th [] [ text "Status" ]
                         , th [] []
                         , th [] []
+                        , th [] []
                         ]
                     ]
                 , tbody []
-                    ((List.map (displayTodo frozen selectedId) <| List.filter viewFilter <| List.sortBy .lastWorked model.todos)
+                    ((List.concatMap (displayTodo frozen selectedId) <| List.filter viewFilter <| List.sortBy .lastWorked model.todos)
                         ++ [ displayInputRow model.inputText ]
                     )
                 ]
@@ -80,7 +83,7 @@ displayViewFilterButtons filter =
             ]
 
 
-displayTodo : Bool -> Int -> Todo -> Html Msg
+displayTodo : Bool -> Int -> Todo -> List (Html Msg)
 displayTodo frozen selectedId todo =
     let
         isSelected =
@@ -124,6 +127,28 @@ displayTodo frozen selectedId todo =
                 ( _, _, _ ) ->
                     td [] [ text todo.text ]
 
+        ironColor =
+            case todo.status of
+                Hot ->
+                    "yellow"
+
+                Warm ->
+                    "orange"
+
+                Cool ->
+                    "red"
+
+                Cold ->
+                    "darkgray"
+
+                _ ->
+                    "black"
+
+        tempElement =
+            Svg.svg [ SA.width "50", SA.height "20" ]
+                [ Svg.rect [ SA.x "0", SA.y "0", SA.width "50", SA.height "20", SA.rx "5", SA.ry "5", SA.fill ironColor ] []
+                ]
+
         extraButtons =
             if frozen && todo.status == Cold then
                 [ button [ type' "button", class "btn btn-warning", onClick <| RenewTodo todo.elmId ] [ text "Renew" ]
@@ -162,13 +187,38 @@ displayTodo frozen selectedId todo =
 
                 Unsaved ->
                     "!"
+
+        notesrow =
+            if isSelected then
+                [ tr [ class "info" ]
+                    [ td [ colspan 5 ]
+                        [ textarea
+                            [ class "form-control"
+                            , id <| "todo-notes-" ++ toString todo.elmId
+                            , placeholder "Notes"
+                            , value todo.notes
+                            , maxlength 255
+                            , onInput <| SetTodoNotes todo.elmId
+                            , onEsc NoOp <| BlurNotes todo.elmId
+                            , onFocus <| SetEditingNotes True
+                            , onBlur <| SetEditingNotes False
+                            ]
+                            []
+                        ]
+                    ]
+                ]
+            else
+                []
     in
-        tr rowAttributes
+        [ tr rowAttributes
             [ tdTodoTextElement
-            , td [] [ text <| toString todo.status, text "  ", span [ class "badge" ] [ text <| toString todo.timesRenewed ] ]
+            , td [] [ tempElement ]
+            , td [] [ span [ class "badge" ] [ text <| toString todo.timesRenewed ] ]
             , td [] [ buttons ]
             , td [] [ text saveText ]
             ]
+        ]
+            ++ notesrow
 
 
 displayInputRow : String -> Html Msg
@@ -179,6 +229,7 @@ displayInputRow inputText =
                 [ input [ type' "text", class "form-control", id "task-input", onInput SetInput, placeholder "New Todo", value inputText, onEnter NoOp AddTodo, onFocus <| UnselectTodo ] []
                 ]
             ]
+        , td [] []
         , td [] []
         , td []
             [ button [ type' "button", class "btn btn-primary", onClick AddTodo ] [ text "Add Todo" ]
