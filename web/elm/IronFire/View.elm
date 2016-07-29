@@ -145,9 +145,7 @@ displayTodo frozen selectedId todo =
                     "black"
 
         tempElement =
-            Svg.svg [ SA.width "50", SA.height "20" ]
-                [ Svg.rect [ SA.x "0", SA.y "0", SA.width "50", SA.height "20", SA.rx "5", SA.ry "5", SA.fill ironColor ] []
-                ]
+            anvil ironColor
 
         extraButtons =
             if frozen && todo.status == Cold then
@@ -320,4 +318,23 @@ displaySettingsPanelBody settings =
                 ]
             ]
         , button [ type' "button", class "btn btn-danger", onClick ClearLocalTodos ] [ text "Clear Local Todos" ]
+        ]
+
+
+anvil : String -> Html Msg
+anvil color =
+    Svg.svg [ SA.width "40", SA.height "20", SA.viewBox "0 0 100 50", SA.mask "url(#mask)" ]
+        [ Svg.defs []
+            [ Svg.clipPath [ id "left-clippath" ] [ Svg.rect [ SA.x "0", SA.y "2", SA.width "25", SA.height "13" ] [] ]
+            , Svg.clipPath [ id "right-clippath" ] [ Svg.rect [ SA.x "65", SA.y "5", SA.width "35", SA.height "20" ] [] ]
+            , Svg.mask [ id "mask" ]
+                [ Svg.rect [ SA.x "0", SA.y "0", SA.width "100", SA.height "50", SA.fill "white" ] []
+                , Svg.circle [ SA.cx "25", SA.cy "25", SA.r "10", SA.fill "black" ] []
+                , Svg.circle [ SA.cx "75", SA.cy "25", SA.r "10", SA.fill "black" ] []
+                , Svg.ellipse [ SA.cx "100", SA.cy "25", SA.rx "35", SA.ry "20", SA.fill "black", SA.clipPath "url(#right-clippath)" ] []
+                ]
+            ]
+        , Svg.rect [ SA.x "25", SA.y "0", SA.width "75", SA.height "20", SA.fill color ] []
+        , Svg.ellipse [ SA.cx "25", SA.cy "2", SA.rx "25", SA.ry "13", SA.fill color, SA.clipPath "url(#left-clippath)" ] []
+        , Svg.rect [ SA.x "25", SA.y "20", SA.width "50", SA.height "30", SA.fill color ] []
         ]
