@@ -9,6 +9,7 @@ import Phoenix.Socket
 import Phoenix.Push
 import Keyboard
 import Char exposing (fromCode)
+import Dom
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -28,7 +29,7 @@ update msg model =
                         , inputText = ""
                         , nextId = model.nextId + 1
                       }
-                    , focus "#task-input"
+                    , focus "task-input"
                     )
                         |> withSaveNewTodosWhere (.elmId >> (==) model.nextId)
 
@@ -52,7 +53,7 @@ update msg model =
                 |> withSaveModifiedTodosWhere (.elmId >> (==) id)
 
         SetTodoInput id input ->
-            ( updateSpecificTodo model id (\t -> { t | input = Just input }), focus <| "#todo-input-" ++ toString id )
+            ( updateSpecificTodo model id (\t -> { t | input = Just input }), focus <| "todo-input-" ++ toString id )
 
         SetTodoNotes id notes' ->
             ( updateSpecificTodo model id (\t -> { t | notes = notes', lastModified = model.currentTime, saveStatus = modifySaveStatus t.saveStatus }), Cmd.none )
@@ -83,11 +84,11 @@ update msg model =
             { model | selectedId = Nothing, todos = List.map (\t -> { t | input = Nothing }) model.todos } ! []
 
         FocusNotes id ->
-            model ! [ focus <| "#todo-notes-" ++ toString id ]
+            model ! [ focus <| "todo-notes-" ++ toString id ]
 
         BlurNotes id ->
             model
-                ! [ blur <| "#todo-notes-" ++ toString id ]
+                ! [ blur <| "todo-notes-" ++ toString id ]
                 |> withSaveModifiedTodosWhere (.elmId >> (==) id)
 
         SetEditingNotes editing ->
@@ -107,9 +108,9 @@ update msg model =
 
                 cmd =
                     if nextSelect == Nothing then
-                        focus "#task-input"
+                        focus "task-input"
                     else
-                        blur "#task-input"
+                        blur "task-input"
             in
                 { model | selectedId = nextSelect } ! [ cmd ]
 
@@ -120,9 +121,9 @@ update msg model =
 
                 cmd =
                     if nextSelect == Nothing then
-                        focus "#task-input"
+                        focus "task-input"
                     else
-                        blur "#task-input"
+                        blur "task-input"
             in
                 { model | selectedId = nextSelect } ! [ cmd ]
 
@@ -437,14 +438,23 @@ updateSettings model update =
               ]
 
 
+focus : String -> Cmd Msg
+focus =
+    Task.perform alwaysNoOp alwaysNoOp << Dom.focus
+
+
+blur : String -> Cmd Msg
+blur =
+    Task.perform alwaysNoOp alwaysNoOp << Dom.blur
+
+
+alwaysNoOp : a -> Msg
+alwaysNoOp =
+    Basics.always NoOp
+
+
 
 -- COMMANDS
-
-
-port focus : String -> Cmd msg
-
-
-port blur : String -> Cmd msg
 
 
 port connectLocal : String -> Cmd msg
