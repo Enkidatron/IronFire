@@ -5,6 +5,7 @@ import Json.Encode as JE
 import Json.Decode as JD exposing ((:=))
 import Json.Decode.Extra exposing ((|:))
 import String
+import Time exposing (Time)
 
 
 type alias Value =
@@ -44,6 +45,20 @@ jsonSettings settings =
         , ( "coldLength", JE.int settings.coldLength )
         , ( "coldLengthUnit", JE.string <| toString settings.coldLengthUnit )
         ]
+
+
+jsonTimedAppStatus : Time -> AppStatus -> Value
+jsonTimedAppStatus time status =
+    let
+        frozen =
+            case status of
+                Frozen ->
+                    True
+
+                Normal ->
+                    False
+    in
+        JE.object [ ( "timestamp", JE.float time ), ( "frozen", JE.bool frozen ) ]
 
 
 jsonAuthPayload : PhxInfo -> Value
@@ -235,3 +250,30 @@ ackDecoder =
 decodeAck : Value -> Result String ( Int, Int )
 decodeAck =
     JD.decodeValue ackDecoder
+
+
+timedAppStatusDecoder : JD.Decoder ( Time, AppStatus )
+timedAppStatusDecoder =
+    JD.succeed (,)
+        |: ("timestamp" := JD.float)
+        |: appStatusDecoder
+
+
+appStatusDecoder : JD.Decoder AppStatus
+appStatusDecoder =
+    JD.map toAppStatus ("frozen" := JD.bool)
+
+
+toAppStatus : Bool -> AppStatus
+toAppStatus text =
+    case text of
+        True ->
+            Frozen
+
+        False ->
+            Normal
+
+
+decodeTimedAppStatus : Value -> Result String ( Time, AppStatus )
+decodeTimedAppStatus =
+    JD.decodeValue timedAppStatusDecoder

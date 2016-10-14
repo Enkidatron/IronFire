@@ -5,6 +5,7 @@ defmodule IronfireServer.UserChannel do
 	alias IronfireServer.Repo
 	alias IronfireServer.Settings
 	alias IronfireServer.Todo
+	alias IronfireServer.App
 
 	def join("user:" <> requested_id, %{"token" => token }, socket) do
     case Phoenix.Token.verify(socket, "user", token) do
@@ -30,15 +31,26 @@ defmodule IronfireServer.UserChannel do
 			_ -> {}
 		end
 		push_all_todos(socket)
+		push_app_status(socket)
 		{:noreply, socket}
 	end
 
 	defp push_all_todos(socket) do
 		todos = Repo.all(from t in Todo, where: t.user_id == ^socket.assigns.user[:id])
 		case todos do
-			nil -> {:noreply, socket}
+			nil -> {}
 			_ -> Enum.map todos, fn todo -> push socket, "new_todo", (todoJSON todo) end 
 		end
+		socket
+	end
+
+	defp push_app_status(socket) do
+		case Repo.get_by(App, user_id: socket.assigns.user[:id]) do
+			%App{} = app ->
+				push socket, "app_status", (appJSON app)
+			_ -> {}
+		end
+		socket
 	end
 
 	def handle_in("get_all_todos", _params, socket) do
@@ -95,6 +107,24 @@ defmodule IronfireServer.UserChannel do
 		{:noreply, socket}
 	end
 
+	def handle_in("app_status", params, socket) do
+		app = case Repo.get_by(App, user_id: socket.assigns.user[:id]) do
+			%App{} = x -> x
+			nil -> %App{}
+		end
+		changeset = App.changeset(
+			app,
+			%{user_id: socket.assigns.user[:id],
+				frozen: params["frozen"],
+				last_updated: params["timestamp"]}
+			)
+		if changeset.valid?  && (params["timestamp"] >= app.last_updated || app.last_updated == nil) do
+			newApp = Repo.insert_or_update!(changeset)
+			broadcast! socket, "app_status", (appJSON newApp)
+		end
+		{:noreply, socket}
+	end
+
 	def handle_in("set_settings", params, socket) do
 		# find previously saved settings for this user, if there are any
 		# then write in the updated settings (insert if necessary)
@@ -141,6 +171,12 @@ defmodule IronfireServer.UserChannel do
 			lastModified: todo.elm_last_modified,
 			saveStatus: "saved",
 			notes: notes
+		}
+	end
+
+	defp appJSON(%App{} = app) do
+		%{frozen: app.frozen, 
+			timestamp: app.last_updated
 		}
 	end
 

@@ -38,6 +38,7 @@ init phxInfo =
                 |> Phoenix.Socket.on "new_todo" userChannel RxTodoPhx
                 |> Phoenix.Socket.on "ack_todo" userChannel AckTodoPhx
                 |> Phoenix.Socket.on "set_settings" userChannel RxSettings
+                |> Phoenix.Socket.on "app_status" userChannel RxStatus
 
         channel =
             Phoenix.Channel.init userChannel

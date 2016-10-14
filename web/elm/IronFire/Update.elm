@@ -39,18 +39,22 @@ update msg model =
         DoWorkOnTodo id ->
             ( updateSpecificTodo model id (\t -> { t | status = Hot, lastWorked = model.currentTime, lastModified = model.currentTime, saveStatus = modifySaveStatus t.saveStatus }), Cmd.none )
                 |> withSaveModifiedTodosWhere (.elmId >> (==) id)
+                |> withSaveAppStatus
 
         FinishTodo id ->
             ( updateSpecificTodo { model | selectedId = Nothing } id (\t -> { t | status = Finished, lastModified = model.currentTime, saveStatus = modifySaveStatus t.saveStatus }), Cmd.none )
                 |> withSaveModifiedTodosWhere (.elmId >> (==) id)
+                |> withSaveAppStatus
 
         KillTodo id ->
             ( updateSpecificTodo { model | selectedId = Nothing } id (\t -> { t | status = Dead, lastModified = model.currentTime, saveStatus = modifySaveStatus t.saveStatus }), Cmd.none )
                 |> withSaveModifiedTodosWhere (.elmId >> (==) id)
+                |> withSaveAppStatus
 
         RenewTodo id ->
             ( updateSpecificTodo model id (\t -> { t | status = Hot, timesRenewed = t.timesRenewed + 1, lastWorked = model.currentTime, lastModified = model.currentTime, saveStatus = modifySaveStatus t.saveStatus }), Cmd.none )
                 |> withSaveModifiedTodosWhere (.elmId >> (==) id)
+                |> withSaveAppStatus
 
         SetTodoInput id input ->
             ( updateSpecificTodo model id (\t -> { t | input = Just input }), focus <| "todo-input-" ++ toString id )
@@ -154,9 +158,16 @@ update msg model =
                         Frozen
                     else
                         Normal
+
+                ( newTimestamp, maybeSave ) =
+                    if newStatus == model.status then
+                        ( model.statusTimestamp, Basics.identity )
+                    else
+                        ( model.currentTime, withSaveAppStatus )
             in
-                ( checkUnfreeze { model | todos = newTodos, status = newStatus }, Cmd.none )
+                ( checkUnfreeze { model | todos = newTodos, status = newStatus, statusTimestamp = model.currentTime }, Cmd.none )
                     |> withSaveModifiedTodosWhere (.saveStatus >> (==) Modified)
+                    |> maybeSave
 
         SetViewFilter newFilter ->
             { model | viewFilter = newFilter } ! []
@@ -178,7 +189,8 @@ update msg model =
                         Err _ ->
                             Basics.identity
             in
-                updateSettings { model | status = Normal } settingsUpdater
+                updateSettings { model | status = Normal, statusTimestamp = model.currentTime } settingsUpdater
+                    |> withSaveAppStatus
 
         SetColdCheckInterval text ->
             let
@@ -190,10 +202,11 @@ update msg model =
                         Err _ ->
                             Basics.identity
             in
-                updateSettings { model | status = Normal } settingsUpdater
+                updateSettings { model | status = Normal, statusTimestamp = model.currentTime } settingsUpdater
 
         SetColdCheckIntervalUnit text ->
-            updateSettings { model | status = Normal } (\s -> { s | coldCheckIntervalUnit = getTimeIntervalFromText text })
+            updateSettings { model | status = Normal, statusTimestamp = model.currentTime } (\s -> { s | coldCheckIntervalUnit = getTimeIntervalFromText text })
+                |> withSaveAppStatus
 
         SetColdLength text ->
             let
@@ -205,10 +218,12 @@ update msg model =
                         Err _ ->
                             Basics.identity
             in
-                updateSettings { model | status = Normal } settingsUpdater
+                updateSettings { model | status = Normal, statusTimestamp = model.currentTime } settingsUpdater
+                    |> withSaveAppStatus
 
         SetColdLengthUnit text ->
-            updateSettings { model | status = Normal } (\s -> { s | coldLengthUnit = getTimeIntervalFromText text })
+            updateSettings { model | status = Normal, statusTimestamp = model.currentTime } (\s -> { s | coldLengthUnit = getTimeIntervalFromText text })
+                |> withSaveAppStatus
 
         RxTodosLocal value ->
             let
@@ -299,6 +314,7 @@ update msg model =
             ( model, Cmd.none )
                 |> withSaveModifiedTodosWhere (.saveStatus >> (==) Modified)
                 |> withSaveNewTodosWhere (.saveStatus >> (==) Unsaved)
+                |> withSaveAppStatus
 
         ItIsNow time ->
             { model | currentTime = time } ! []
@@ -313,6 +329,19 @@ update msg model =
             in
                 { model | todos = [] } ! [ Cmd.map PhoenixMsg phxCmd, saveTodosLocal <| encodeLocalTodos model.phxInfo.userid [] ]
 
+        RxStatus value ->
+            let
+                ( timestamp, rxStatus ) =
+                    decodeTimedAppStatus value |> Result.withDefault ( 0, Frozen )
+
+                newStatus =
+                    if timestamp > model.statusTimestamp then
+                        rxStatus
+                    else
+                        model.status
+            in
+                { model | status = newStatus } ! []
+
 
 
 -- UPDATE HELPERS
@@ -321,7 +350,7 @@ update msg model =
 checkUnfreeze : Model -> Model
 checkUnfreeze model =
     if model.status == Frozen && List.all (.status >> (/=) Cold) model.todos then
-        { model | status = Normal }
+        { model | status = Normal, statusTimestamp = model.currentTime }
     else
         model
 
@@ -413,6 +442,19 @@ withSaveModifiedTodosWhere =
 withSaveNewTodosWhere : (Todo -> Bool) -> ( Model, Cmd Msg ) -> ( Model, Cmd Msg )
 withSaveNewTodosWhere =
     withSaveTodos "new_todo"
+
+
+withSaveAppStatus : ( Model, Cmd Msg ) -> ( Model, Cmd Msg )
+withSaveAppStatus ( model, cmd ) =
+    let
+        push' =
+            Phoenix.Push.init "app_status" ("user:" ++ model.phxInfo.userid)
+                |> Phoenix.Push.withPayload (jsonTimedAppStatus model.statusTimestamp model.status)
+
+        ( newSocket, phxCmd ) =
+            Phoenix.Socket.push push' model.phxSocket
+    in
+        { model | phxSocket = newSocket } ! [ cmd, Cmd.map PhoenixMsg phxCmd ]
 
 
 updateSettings : Model -> (AppSettings -> AppSettings) -> ( Model, Cmd Msg )

@@ -42,6 +42,7 @@ type Msg
     | SaveAllUnsaved
     | ItIsNow Time
     | ClearLocalTodos
+    | RxStatus JE.Value
 
 
 type TodoStatus
@@ -113,6 +114,7 @@ type alias Model =
     , phxInfo : PhxInfo
     , phxSocket : Phoenix.Socket.Socket Msg
     , currentTime : Time
+    , statusTimestamp : Time
     , editingNotes : Bool
     }
 
@@ -146,6 +148,7 @@ newModel info' socket =
     , phxInfo = info'
     , phxSocket = socket
     , currentTime = 0
+    , statusTimestamp = 0
     , editingNotes = False
     }
 
