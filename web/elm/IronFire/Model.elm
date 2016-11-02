@@ -122,6 +122,7 @@ type alias Model =
 type alias PhxInfo =
     { userid : String
     , token : String
+    , phxUrl : String
     }
 
 

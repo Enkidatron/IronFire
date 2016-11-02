@@ -25,7 +25,7 @@ import "phoenix_html"
 import Elm from "./main"
 const elmDiv = document.querySelector('#elm-target');
 if (elmDiv) {
-	var ironfire = Elm.Main.fullscreen({userid: window.userId, token: window.userToken});
+	var ironfire = Elm.Main.fullscreen({userid: window.userId, token: window.userToken, phxUrl: window.phxUrl});
 	ironfire.ports.connectLocal.subscribe(function(userid){
 	  setTimeout(function() {
 	    var savedSettings = localStorage.getItem("elm-ironfire-" + userid + "-settings");

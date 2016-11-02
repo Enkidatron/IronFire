@@ -99,6 +99,7 @@ phxInfoDecoder =
     JD.succeed PhxInfo
         |: ("userid" := JD.string)
         |: ("token" := JD.string)
+        |: ("phxUrl" := JD.string)
 
 
 decodePhxInfo : Value -> Result String PhxInfo

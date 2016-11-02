@@ -23,7 +23,7 @@ init : Maybe Value -> ( Model, Cmd Msg )
 init phxInfo =
     let
         defaultinfo =
-            { userid = "", token = "" }
+            { userid = "", token = "", phxUrl = "ws://localhost:4000/socket/websocket" }
 
         info =
             phxInfo
@@ -34,7 +34,7 @@ init phxInfo =
             "user:" ++ info.userid
 
         initPhoenix =
-            Phoenix.Socket.init "wss://whispering-wave-44301.herokuapp.com/socket/websocket"
+            Phoenix.Socket.init info.phxUrl
                 |> Phoenix.Socket.on "new_todo" userChannel RxTodoPhx
                 |> Phoenix.Socket.on "ack_todo" userChannel AckTodoPhx
                 |> Phoenix.Socket.on "set_settings" userChannel RxSettings
