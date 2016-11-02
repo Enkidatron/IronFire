@@ -7,6 +7,10 @@ import Svg
 import Svg.Attributes as SA
 import IronFire.Model exposing (..)
 import Json.Decode as JD
+import Color.Interpolate as Interpolate exposing (Space(..))
+import Color.Convert as CC
+import Color exposing (rgb)
+import Time exposing (Time)
 
 
 view : Model -> Html Msg
@@ -34,6 +38,9 @@ view model =
 
         saveAllDisabled =
             not <| List.any (.saveStatus >> (/=) Saved) model.todos
+
+        coldLength =
+            (toFloat model.settings.coldLength) * (toTime model.settings.coldLengthUnit)
     in
         div [ class "container" ]
             [ table [ class "table table-condensced" ]
@@ -54,7 +61,7 @@ view model =
                         ]
                     ]
                 , tbody []
-                    ((List.concatMap (displayTodo frozen selectedId) <| List.filter viewFilter <| List.sortBy .lastWorked model.todos)
+                    ((List.concatMap (displayTodo model.currentTime coldLength frozen selectedId) <| List.filter viewFilter <| List.sortBy .lastWorked model.todos)
                         ++ [ displayInputRow model.inputText ]
                     )
                 ]
@@ -84,8 +91,8 @@ displayViewFilterButtons filter =
             ]
 
 
-displayTodo : Bool -> Int -> Todo -> List (Html Msg)
-displayTodo frozen selectedId todo =
+displayTodo : Time -> Time -> Bool -> Int -> Todo -> List (Html Msg)
+displayTodo currentTime coldLength frozen selectedId todo =
     let
         isSelected =
             todo.elmId == selectedId
@@ -128,21 +135,51 @@ displayTodo frozen selectedId todo =
                 ( _, _, _ ) ->
                     td [] [ text todo.text ]
 
+        hotColor =
+            rgb 255 255 0
+
+        warmColor =
+            rgb 255 224 0
+
+        coolColor =
+            rgb 255 32 0
+
+        coldColor =
+            rgb 128 128 128
+
+        startTime =
+            Time.inMilliseconds todo.lastWorked
+
+        warmTime =
+            startTime + ((Time.inMilliseconds coldLength) * 1 / 3)
+
+        coolTime =
+            startTime + ((Time.inMilliseconds coldLength) * 2 / 3)
+
+        coldTime =
+            startTime + (Time.inMilliseconds coldLength)
+
         ironColor =
             case todo.status of
                 Hot ->
-                    "yellow"
+                    Interpolate.interpolate LAB hotColor warmColor (Debug.log "hot" (normalizeTime startTime warmTime currentTime))
+                        |> CC.colorToHex
 
                 Warm ->
-                    "orange"
+                    Interpolate.interpolate LAB warmColor coolColor (Debug.log "warm" (normalizeTime warmTime coolTime currentTime))
+                        |> CC.colorToHex
 
                 Cool ->
-                    "red"
+                    Interpolate.interpolate LAB coolColor coldColor (Debug.log "cool" (normalizeTime coolTime coldTime currentTime))
+                        |> CC.colorToHex
 
                 Cold ->
-                    "darkgray"
+                    coldColor |> CC.colorToHex
 
-                _ ->
+                Finished ->
+                    "black"
+
+                Dead ->
                     "black"
 
         tempElement =
@@ -327,3 +364,8 @@ anvil color =
     Svg.svg [ SA.width "40", SA.height "20", SA.viewBox "0 0 100 50", SA.mask "url(#mask)" ]
         [ Svg.path [ SA.d "M25 2 V0 H100 V5 C 75 5, 65 15, 65 25 C 65 30, 70 35, 75 35 V50 H25 V35 C 30 35, 35 30, 35 25 S 30 15, 25 15 S 0 12, 0 2 Z", SA.fill color ] []
         ]
+
+
+normalizeTime : Float -> Float -> Float -> Float
+normalizeTime start end point =
+    (point - start) / (end - start)
