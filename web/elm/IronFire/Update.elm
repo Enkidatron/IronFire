@@ -5,11 +5,13 @@ import IronFire.Interop exposing (..)
 import Time exposing (..)
 import String exposing (toInt)
 import Task exposing (perform)
-import Phoenix.Socket
-import Phoenix.Push
 import Keyboard
 import Char exposing (fromCode)
 import Dom
+import Phoenix
+import Phoenix.Socket as Socket
+import Phoenix.Channel as Channel
+import Phoenix.Push as Push
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -303,13 +305,6 @@ update msg model =
                 { model | todos = newTodos }
                     ! [ saveTodosLocal <| encodeLocalTodos model.phxInfo.userid newTodos ]
 
-        PhoenixMsg msg ->
-            let
-                ( phxSocket', phxCmd ) =
-                    Phoenix.Socket.update msg model.phxSocket
-            in
-                { model | phxSocket = phxSocket' } ! [ Cmd.map PhoenixMsg phxCmd ]
-
         SaveAllUnsaved ->
             ( model, Cmd.none )
                 |> withSaveModifiedTodosWhere (.saveStatus >> (==) Modified)
@@ -320,14 +315,7 @@ update msg model =
             { model | currentTime = time } ! []
 
         ClearLocalTodos ->
-            let
-                push =
-                    Phoenix.Push.init "get_all_todos" ("user:" ++ model.phxInfo.userid)
-
-                ( phxSocket', phxCmd ) =
-                    Phoenix.Socket.push push model.phxSocket
-            in
-                { model | todos = [] } ! [ Cmd.map PhoenixMsg phxCmd, saveTodosLocal <| encodeLocalTodos model.phxInfo.userid [] ]
+            { model | todos = [] } ! [ saveTodosLocal <| encodeLocalTodos model.phxInfo.userid [], getAllTodos model ]
 
         RxStatus value ->
             let
@@ -341,6 +329,12 @@ update msg model =
                         model.status
             in
                 { model | status = newStatus } ! []
+
+        SetPhxStatus status ->
+            { model | phxStatus = status } ! []
+
+        TryReconnect ->
+            model ! [ getAllTodos model ]
 
 
 
@@ -416,22 +410,19 @@ updateSpecificTodo model id updateTodo =
 withSaveTodos : String -> (Todo -> Bool) -> ( Model, Cmd Msg ) -> ( Model, Cmd Msg )
 withSaveTodos message gate ( model, cmdMsg ) =
     let
-        reducer : Todo -> ( Phoenix.Socket.Socket Msg, Cmd Msg ) -> ( Phoenix.Socket.Socket Msg, Cmd Msg )
-        reducer todo ( socket, cmd ) =
-            let
-                push' =
-                    Phoenix.Push.init message ("user:" ++ model.phxInfo.userid)
-                        |> Phoenix.Push.withPayload (jsonTodo todo)
+        userTopic =
+            "user:" ++ model.phxInfo.userid
 
-                ( newSocket, newCmd ) =
-                    Phoenix.Socket.push push' socket
-            in
-                ( newSocket, Cmd.batch [ Cmd.map PhoenixMsg newCmd, cmd ] )
+        todosToUpdate =
+            List.filter gate model.todos
 
-        ( phxSocket', cmd' ) =
-            List.foldl reducer ( model.phxSocket, Cmd.none ) (List.filter gate model.todos)
+        pushes =
+            List.map (\todo -> Push.init userTopic message |> Push.withPayload (jsonTodo todo)) todosToUpdate
+
+        pushCmds =
+            List.map (Phoenix.push model.phxInfo.phxUrl) pushes
     in
-        { model | phxSocket = phxSocket' } ! [ cmdMsg, cmd', saveTodosLocal <| encodeLocalTodos model.phxInfo.userid model.todos ]
+        model ! ([ cmdMsg, saveTodosLocal <| encodeLocalTodos model.phxInfo.userid model.todos ] ++ pushCmds)
 
 
 withSaveModifiedTodosWhere : (Todo -> Bool) -> ( Model, Cmd Msg ) -> ( Model, Cmd Msg )
@@ -447,14 +438,14 @@ withSaveNewTodosWhere =
 withSaveAppStatus : ( Model, Cmd Msg ) -> ( Model, Cmd Msg )
 withSaveAppStatus ( model, cmd ) =
     let
-        push' =
-            Phoenix.Push.init "app_status" ("user:" ++ model.phxInfo.userid)
-                |> Phoenix.Push.withPayload (jsonTimedAppStatus model.statusTimestamp model.status)
+        userTopic =
+            "user:" ++ model.phxInfo.userid
 
-        ( newSocket, phxCmd ) =
-            Phoenix.Socket.push push' model.phxSocket
+        push =
+            Push.init userTopic "app_status"
+                |> Push.withPayload (jsonTimedAppStatus model.statusTimestamp model.status)
     in
-        { model | phxSocket = newSocket } ! [ cmd, Cmd.map PhoenixMsg phxCmd ]
+        model ! [ cmd, Phoenix.push model.phxInfo.phxUrl push ]
 
 
 updateSettings : Model -> (AppSettings -> AppSettings) -> ( Model, Cmd Msg )
@@ -463,21 +454,32 @@ updateSettings model update =
         newSettings =
             update model.settings
 
-        push' =
-            Phoenix.Push.init "set_settings" ("user:" ++ model.phxInfo.userid)
-                |> Phoenix.Push.withPayload (jsonSettings newSettings)
+        userTopic =
+            "user:" ++ model.phxInfo.userid
 
-        ( phxSocket', phxCmd ) =
-            Phoenix.Socket.push push' model.phxSocket
+        push =
+            Push.init userTopic "set_settings"
+                |> Push.withPayload (jsonSettings newSettings)
     in
         { model
             | settings = newSettings
-            , phxSocket = phxSocket'
         }
             ! [ checkForFreezeNow
               , saveSettingsLocal <| encodeLocalSettings model.phxInfo.userid newSettings
-              , Cmd.map PhoenixMsg phxCmd
+              , Phoenix.push model.phxInfo.phxUrl push
               ]
+
+
+getAllTodos : Model -> Cmd Msg
+getAllTodos model =
+    let
+        userTopic =
+            "user:" ++ model.phxInfo.userid
+
+        push =
+            Push.init userTopic "get_all_todos"
+    in
+        Phoenix.push model.phxInfo.phxUrl push
 
 
 focus : String -> Cmd Msg
@@ -574,13 +576,26 @@ subscriptions model =
 
                     Just _ ->
                         []
+
+        socket =
+            Socket.init model.phxInfo.phxUrl
+
+        channel =
+            Channel.init ("user:" ++ model.phxInfo.userid)
+                |> Channel.on "new_todo" RxTodoPhx
+                |> Channel.on "ack_todo" AckTodoPhx
+                |> Channel.on "set_settings" RxSettings
+                |> Channel.on "app_status" RxStatus
+                |> Channel.withPayload (jsonAuthPayload model.phxInfo)
+                |> Channel.onJoin (\_ -> SetPhxStatus Joined)
+                |> Channel.onLeave (\_ -> SetPhxStatus NotJoined)
     in
         Sub.batch
             ([ Time.every interval CheckForColdTodos
              , Time.every second ItIsNow
              , rxTodos RxTodosLocal
              , rxSettings RxSettings
-             , Phoenix.Socket.listen model.phxSocket PhoenixMsg
+             , Phoenix.connect socket [ channel ]
              ]
                 ++ hotkeys
             )

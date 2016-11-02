@@ -40,6 +40,7 @@ view model =
                 [ tr []
                     [ displayViewFilterButtons model.viewFilter
                     , button [ type' "button", class "btn btn-primary pull-right", onClick SaveAllUnsaved, disabled saveAllDisabled ] [ text "Save All" ]
+                    , button [ type' "button", class "btn pull-right", onClick TryReconnect, disabled (model.phxStatus == Joined) ] [ text "Reconnect" ]
                     ]
                 ]
             , table [ class "table table-condensced" ]

@@ -3,7 +3,6 @@ module IronFire.Model exposing (..)
 --import IronFire.Update exposing (Msg)
 
 import Time exposing (Time)
-import Phoenix.Socket
 import Json.Encode as JE
 
 
@@ -38,11 +37,17 @@ type Msg
     | RxTodoPhx JE.Value
     | RxSettings JE.Value
     | AckTodoPhx JE.Value
-    | PhoenixMsg (Phoenix.Socket.Msg Msg)
     | SaveAllUnsaved
     | ItIsNow Time
     | ClearLocalTodos
     | RxStatus JE.Value
+    | SetPhxStatus PhxStatus
+    | TryReconnect
+
+
+type PhxStatus
+    = Joined
+    | NotJoined
 
 
 type TodoStatus
@@ -112,10 +117,10 @@ type alias Model =
     , nextId : Int
     , settings : AppSettings
     , phxInfo : PhxInfo
-    , phxSocket : Phoenix.Socket.Socket Msg
     , currentTime : Time
     , statusTimestamp : Time
     , editingNotes : Bool
+    , phxStatus : PhxStatus
     }
 
 
@@ -137,8 +142,8 @@ defaultSettings =
     }
 
 
-newModel : PhxInfo -> Phoenix.Socket.Socket Msg -> Model
-newModel info' socket =
+newModel : PhxInfo -> Model
+newModel info' =
     { inputText = ""
     , todos = []
     , selectedId = Nothing
@@ -147,10 +152,10 @@ newModel info' socket =
     , nextId = 1
     , settings = defaultSettings
     , phxInfo = info'
-    , phxSocket = socket
     , currentTime = 0
     , statusTimestamp = 0
     , editingNotes = False
+    , phxStatus = NotJoined
     }
 
 
