@@ -1,8 +1,8 @@
-module Phoenix.Message exposing (..)
+module Phoenix.Internal.Message exposing (..)
 
-import Phoenix.Push as Push exposing (Push)
+import Json.Decode as JD exposing (Value)
 import Json.Encode as JE
-import Json.Decode as JD exposing (Value, (:=))
+import Phoenix.Push as Push exposing (Push)
 
 
 type alias Message =
@@ -61,10 +61,10 @@ decode : String -> Result String Message
 decode msg =
     let
         decoder =
-            JD.object4 Message
-                ("topic" := JD.string)
-                ("event" := JD.string)
-                ("payload" := JD.value)
-                ("ref" := JD.oneOf [ JD.map Just JD.int, JD.null Nothing ])
+            JD.map4 Message
+                (JD.field "topic" JD.string)
+                (JD.field "event" JD.string)
+                (JD.field "payload" JD.value)
+                (JD.field "ref" (JD.oneOf [ JD.map Just JD.int, JD.null Nothing ]))
     in
         JD.decodeString decoder msg

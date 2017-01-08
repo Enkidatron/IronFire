@@ -61,8 +61,8 @@ update msg model =
         SetTodoInput id input ->
             ( updateSpecificTodo model id (\t -> { t | input = Just input }), focus <| "todo-input-" ++ toString id )
 
-        SetTodoNotes id notes' ->
-            ( updateSpecificTodo model id (\t -> { t | notes = notes', lastModified = model.currentTime, saveStatus = modifySaveStatus t.saveStatus }), Cmd.none )
+        SetTodoNotes id notes_ ->
+            ( updateSpecificTodo model id (\t -> { t | notes = notes_, lastModified = model.currentTime, saveStatus = modifySaveStatus t.saveStatus }), Cmd.none )
 
         CancelTodoInput id ->
             ( updateSpecificTodo model id (\t -> { t | input = Nothing }), Cmd.none )
@@ -247,7 +247,7 @@ update msg model =
                 shouldUpdate phxTodo todo =
                     phxTodo.phxId == todo.phxId && phxTodo.lastModified >= todo.lastModified
 
-                model' =
+                model_ =
                     case decodeTodo value of
                         Ok phxTodo ->
                             case List.filter (.phxId >> (==) phxTodo.phxId) model.todos of
@@ -270,11 +270,11 @@ update msg model =
                         Err err ->
                             Debug.log err model
             in
-                model' ! [ saveTodosLocal <| encodeLocalTodos model.phxInfo.userid model'.todos, checkForFreezeNow ]
+                model_ ! [ saveTodosLocal <| encodeLocalTodos model.phxInfo.userid model_.todos, checkForFreezeNow ]
 
         RxSettings value ->
             let
-                settings' =
+                settings_ =
                     case decodeAppSettings value of
                         Ok settings ->
                             { settings | show = model.settings.show }
@@ -282,16 +282,16 @@ update msg model =
                         Err err ->
                             model.settings
             in
-                { model | settings = settings' } ! [ checkForFreezeNow ]
+                { model | settings = settings_ } ! [ checkForFreezeNow ]
 
         AckTodoPhx value ->
             let
                 updateTodo =
                     case decodeAck value of
-                        Ok ( phxId', elmId' ) ->
+                        Ok ( phxId_, elmId_ ) ->
                             (\todo ->
-                                if todo.elmId == elmId' then
-                                    { todo | phxId = Just phxId', saveStatus = Saved }
+                                if todo.elmId == elmId_ then
+                                    { todo | phxId = Just phxId_, saveStatus = Saved }
                                 else
                                     todo
                             )
@@ -484,12 +484,12 @@ getAllTodos model =
 
 focus : String -> Cmd Msg
 focus =
-    Task.perform alwaysNoOp alwaysNoOp << Dom.focus
+    Task.attempt alwaysNoOp << Dom.focus
 
 
 blur : String -> Cmd Msg
 blur =
-    Task.perform alwaysNoOp alwaysNoOp << Dom.blur
+    Task.attempt alwaysNoOp << Dom.blur
 
 
 alwaysNoOp : a -> Msg
@@ -512,7 +512,7 @@ port saveSettingsLocal : String -> Cmd msg
 
 checkForFreezeNow : Cmd Msg
 checkForFreezeNow =
-    Task.perform (\_ -> Debug.crash "Time Fetch Failed") CheckForColdTodos Time.now
+    Task.perform CheckForColdTodos Time.now
 
 
 

@@ -1,15 +1,15 @@
 module Main exposing (..)
 
-import Html.App as App
+import Html
 import IronFire.Model exposing (..)
 import IronFire.Update exposing (..)
 import IronFire.View exposing (..)
 import IronFire.Interop exposing (..)
 
 
-main : Program (Maybe Value)
+main : Program (Maybe Value) Model Msg
 main =
-    App.programWithFlags
+    Html.programWithFlags
         { init = init
         , view = view
         , update = update
@@ -25,7 +25,7 @@ init phxInfo =
 
         info =
             phxInfo
-                `Maybe.andThen` (decodePhxInfo >> Result.toMaybe)
+                |> Maybe.andThen (decodePhxInfo >> Result.toMaybe)
                 |> Maybe.withDefault defaultinfo
 
         model =

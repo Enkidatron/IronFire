@@ -47,8 +47,8 @@ joinMessage { topic, payload } =
             Nothing ->
                 base
 
-            Just payload' ->
-                Message.payload payload' base
+            Just payload_ ->
+                Message.payload payload_ base
 
 
 leaveMessage : Channel msg -> Message

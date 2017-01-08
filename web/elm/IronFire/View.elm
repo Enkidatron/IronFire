@@ -46,8 +46,8 @@ view model =
             [ table [ class "table table-condensced" ]
                 [ tr []
                     [ displayViewFilterButtons model.viewFilter
-                    , button [ type' "button", class "btn btn-primary pull-right", onClick SaveAllUnsaved, disabled saveAllDisabled ] [ text "Save All" ]
-                    , button [ type' "button", class "btn pull-right", onClick TryReconnect, disabled (model.phxStatus == Joined) ] [ text "Reconnect" ]
+                    , button [ type_ "button", class "btn btn-primary pull-right", onClick SaveAllUnsaved, disabled saveAllDisabled ] [ text "Save All" ]
+                    , button [ type_ "button", class "btn pull-right", onClick TryReconnect, disabled (model.phxStatus == Joined) ] [ text "Reconnect" ]
                     ]
                 ]
             , table [ class "table table-condensced" ]
@@ -81,7 +81,7 @@ displayViewFilterButtons filter =
             )
 
         displayViewButton view label =
-            button [ type' "button", class <| getClass view, onClick <| SetViewFilter view ] [ text label ]
+            button [ type_ "button", class <| getClass view, onClick <| SetViewFilter view ] [ text label ]
     in
         div [ class "btn-group" ]
             [ displayViewButton ViewAll "All"
@@ -117,7 +117,7 @@ displayTodo currentTime coldLength frozen selectedId todo =
                 ( Just inputText, True, _ ) ->
                     td []
                         [ input
-                            [ type' "text"
+                            [ type_ "text"
                             , class "form-control"
                             , id <| "todo-input-" ++ toString todo.elmId
                             , onInput <| SetTodoInput todo.elmId
@@ -162,15 +162,15 @@ displayTodo currentTime coldLength frozen selectedId todo =
         ironColor =
             case todo.status of
                 Hot ->
-                    Interpolate.interpolate LAB hotColor warmColor (Debug.log "hot" (normalizeTime startTime warmTime currentTime))
+                    Interpolate.interpolate LAB hotColor warmColor (normalizeTime startTime warmTime currentTime)
                         |> CC.colorToHex
 
                 Warm ->
-                    Interpolate.interpolate LAB warmColor coolColor (Debug.log "warm" (normalizeTime warmTime coolTime currentTime))
+                    Interpolate.interpolate LAB warmColor coolColor (normalizeTime warmTime coolTime currentTime)
                         |> CC.colorToHex
 
                 Cool ->
-                    Interpolate.interpolate LAB coolColor coldColor (Debug.log "cool" (normalizeTime coolTime coldTime currentTime))
+                    Interpolate.interpolate LAB coolColor coldColor (normalizeTime coolTime coldTime currentTime)
                         |> CC.colorToHex
 
                 Cold ->
@@ -187,7 +187,7 @@ displayTodo currentTime coldLength frozen selectedId todo =
 
         extraButtons =
             if frozen && todo.status == Cold then
-                [ button [ type' "button", class "btn btn-warning", onClick <| RenewTodo todo.elmId ] [ text "Renew" ]
+                [ button [ type_ "button", class "btn btn-warning", onClick <| RenewTodo todo.elmId ] [ text "Renew" ]
                 ]
             else
                 []
@@ -196,18 +196,18 @@ displayTodo currentTime coldLength frozen selectedId todo =
             case ( todo.input, (isSelected && (isAlive todo) && (not frozen)) || (frozen && todo.status == Cold) ) of
                 ( Nothing, True ) ->
                     div [ class "btn-group" ]
-                        ([ button [ type' "button", class "btn btn-info", onClick <| DoWorkOnTodo todo.elmId ] [ text "I Worked On This" ]
-                         , button [ type' "button", class "btn btn-success", onClick <| FinishTodo todo.elmId ] [ text "Finish" ]
+                        ([ button [ type_ "button", class "btn btn-info", onClick <| DoWorkOnTodo todo.elmId ] [ text "I Worked On This" ]
+                         , button [ type_ "button", class "btn btn-success", onClick <| FinishTodo todo.elmId ] [ text "Finish" ]
                          ]
                             ++ extraButtons
-                            ++ [ button [ type' "button", class "btn btn-danger", onClick <| KillTodo todo.elmId ] [ text "Kill" ]
+                            ++ [ button [ type_ "button", class "btn btn-danger", onClick <| KillTodo todo.elmId ] [ text "Kill" ]
                                ]
                         )
 
                 ( Just _, _ ) ->
                     div [ class "btn-group" ]
-                        [ button [ type' "button", class "btn btn-info", onClick <| FinishTodoInput todo.elmId ] [ text "Update" ]
-                        , button [ type' "button", class "btn btn-warning", onClick <| CancelTodoInput todo.elmId ] [ text "Cancel" ]
+                        [ button [ type_ "button", class "btn btn-info", onClick <| FinishTodoInput todo.elmId ] [ text "Update" ]
+                        , button [ type_ "button", class "btn btn-warning", onClick <| CancelTodoInput todo.elmId ] [ text "Cancel" ]
                         ]
 
                 ( _, _ ) ->
@@ -262,13 +262,13 @@ displayInputRow inputText =
     tr []
         [ td []
             [ div [ class "form-group" ]
-                [ input [ type' "text", class "form-control", id "task-input", onInput SetInput, placeholder "New Todo", value inputText, onEnter NoOp AddTodo, onFocus <| UnselectTodo ] []
+                [ input [ type_ "text", class "form-control", id "task-input", onInput SetInput, placeholder "New Todo", value inputText, onEnter NoOp AddTodo, onFocus <| UnselectTodo ] []
                 ]
             ]
         , td [] []
         , td [] []
         , td []
-            [ button [ type' "button", class "btn btn-primary", onClick AddTodo ] [ text "Add Todo" ]
+            [ button [ type_ "button", class "btn btn-primary", onClick AddTodo ] [ text "Add Todo" ]
             ]
         , td [] []
         ]
@@ -289,8 +289,8 @@ onEnter fail success =
 onKeyup : Int -> msg -> msg -> Attribute msg
 onKeyup code fail success =
     let
-        tagger code' =
-            if code' == code then
+        tagger code_ =
+            if code_ == code then
                 success
             else
                 fail
@@ -326,12 +326,12 @@ displaySettingsPanelBody settings =
             [ div [ class "form-group" ]
                 [ label [ for "freezeThreshold", class "col-sm-3 control-label" ] [ text "Freeze Threshold" ]
                 , div [ class "col-sm-9" ]
-                    [ input [ type' "number", class "form-control", id "freezeThreshold", onInput SetThreshold, value <| toString settings.freezeThreshold ] [] ]
+                    [ input [ type_ "number", class "form-control", id "freezeThreshold", onInput SetThreshold, value <| toString settings.freezeThreshold ] [] ]
                 ]
             , div [ class "form-group" ]
                 [ label [ for "intervalNumber", class "col-sm-3 control-label" ] [ text "Interval" ]
                 , div [ class "col-sm-6" ]
-                    [ input [ type' "number", class "form-control", id "intervalNumber", onInput SetColdCheckInterval, value <| toString settings.coldCheckInterval ] [] ]
+                    [ input [ type_ "number", class "form-control", id "intervalNumber", onInput SetColdCheckInterval, value <| toString settings.coldCheckInterval ] [] ]
                 , div [ class "col-sm-3" ]
                     [ label [ for "intervalUnit", class "sr-only" ] [ text "Inverval Unit" ]
                     , select [ class "form-control", onInput SetColdCheckIntervalUnit, id "intervalUnit" ]
@@ -343,7 +343,7 @@ displaySettingsPanelBody settings =
             , div [ class "form-group" ]
                 [ label [ for "coldLength", class "col-sm-3 control-label" ] [ text "Time Before Cold" ]
                 , div [ class "col-sm-6" ]
-                    [ input [ type' "number", class "form-control", id "coldLength", onInput SetColdLength, value <| toString settings.coldLength ] [] ]
+                    [ input [ type_ "number", class "form-control", id "coldLength", onInput SetColdLength, value <| toString settings.coldLength ] [] ]
                 , div [ class "col-sm-3" ]
                     [ label [ for "coldLengthUnit", class "sr-only" ] [ text "Cold Length Unit" ]
                     , select [ class "form-control", onInput SetColdLengthUnit, id "coldLengthUnit" ]
@@ -355,7 +355,7 @@ displaySettingsPanelBody settings =
                     ]
                 ]
             ]
-        , button [ type' "button", class "btn btn-danger", onClick ClearLocalTodos ] [ text "Clear Local Todos" ]
+        , button [ type_ "button", class "btn btn-danger", onClick ClearLocalTodos ] [ text "Clear Local Todos" ]
         ]
 
 

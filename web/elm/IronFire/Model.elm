@@ -143,7 +143,7 @@ defaultSettings =
 
 
 newModel : PhxInfo -> Model
-newModel info' =
+newModel info_ =
     { inputText = ""
     , todos = []
     , selectedId = Nothing
@@ -151,7 +151,7 @@ newModel info' =
     , viewFilter = ViewAlive
     , nextId = 1
     , settings = defaultSettings
-    , phxInfo = info'
+    , phxInfo = info_
     , currentTime = 0
     , statusTimestamp = 0
     , editingNotes = False
@@ -160,10 +160,10 @@ newModel info' =
 
 
 newTodo : Int -> String -> Time -> Todo
-newTodo id text' timestamp =
+newTodo id text_ timestamp =
     { phxId = Nothing
     , elmId = id
-    , text = text'
+    , text = text_
     , notes = ""
     , status = Hot
     , timesRenewed = 0

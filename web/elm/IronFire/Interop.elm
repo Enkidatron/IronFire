@@ -2,7 +2,7 @@ module IronFire.Interop exposing (..)
 
 import IronFire.Model exposing (..)
 import Json.Encode as JE
-import Json.Decode as JD exposing ((:=))
+import Json.Decode as JD
 import Json.Decode.Extra exposing ((|:))
 import String
 import Time exposing (Time)
@@ -97,9 +97,9 @@ encodeLocalSettings userid settings =
 phxInfoDecoder : JD.Decoder PhxInfo
 phxInfoDecoder =
     JD.succeed PhxInfo
-        |: ("userid" := JD.string)
-        |: ("token" := JD.string)
-        |: ("phxUrl" := JD.string)
+        |: (JD.field "userid" JD.string)
+        |: (JD.field "token" JD.string)
+        |: (JD.field "phxUrl" JD.string)
 
 
 decodePhxInfo : Value -> Result String PhxInfo
@@ -111,11 +111,11 @@ appSettingsDecoder : JD.Decoder AppSettings
 appSettingsDecoder =
     JD.succeed AppSettings
         |: (JD.succeed False)
-        |: ("freezeThreshold" := JD.int)
-        |: ("coldCheckInterval" := JD.int)
-        |: ("coldCheckIntervalUnit" := JD.string `JD.andThen` toTimeInterval)
-        |: ("coldLength" := JD.int)
-        |: ("coldLengthUnit" := JD.string `JD.andThen` toTimeInterval)
+        |: (JD.field "freezeThreshold" JD.int)
+        |: (JD.field "coldCheckInterval" JD.int)
+        |: (JD.field "coldCheckIntervalUnit" JD.string |> JD.andThen toTimeInterval)
+        |: (JD.field "coldLength" JD.int)
+        |: (JD.field "coldLengthUnit" JD.string |> JD.andThen toTimeInterval)
 
 
 toTimeInterval : String -> JD.Decoder TimeInterval
@@ -155,16 +155,16 @@ todosDecoder =
 todoDecoder : JD.Decoder Todo
 todoDecoder =
     JD.succeed Todo
-        |: (JD.maybe ("phxId" := JD.int) `JD.andThen` toPhxId)
-        |: (JD.oneOf [ ("elmId" := JD.int), (JD.succeed 0) ])
-        |: ("text" := JD.string)
-        |: (JD.oneOf [ ("notes" := JD.string), (JD.succeed "") ])
-        |: ("status" := JD.string `JD.andThen` toStatus)
-        |: ("timesRenewed" := JD.int)
-        |: (JD.oneOf [ ("lastTouched" := JD.float), ("lastWorked" := JD.float) ])
-        |: (JD.oneOf [ ("lastModified" := JD.float), (JD.succeed 0) ])
+        |: (JD.maybe (JD.field "phxId" JD.int) |> JD.andThen toPhxId)
+        |: (JD.oneOf [ (JD.field "elmId" JD.int), (JD.succeed 0) ])
+        |: (JD.field "text" JD.string)
+        |: (JD.oneOf [ (JD.field "notes" JD.string), (JD.succeed "") ])
+        |: (JD.field "status" JD.string |> JD.andThen toStatus)
+        |: (JD.field "timesRenewed" JD.int)
+        |: (JD.oneOf [ (JD.field "lastTouched" JD.float), (JD.field "lastWorked" JD.float) ])
+        |: (JD.oneOf [ (JD.field "lastModified" JD.float), (JD.succeed 0) ])
         |: (JD.succeed Nothing)
-        |: (JD.oneOf [ ("saveStatus" := JD.string `JD.andThen` stringToSaveStatus), ("phxId" := JD.int `JD.andThen` phxIdToSaveStatus), (JD.succeed Unsaved) ])
+        |: (JD.oneOf [ (JD.field "saveStatus" JD.string |> JD.andThen stringToSaveStatus), (JD.field "phxId" JD.int |> JD.andThen phxIdToSaveStatus), (JD.succeed Unsaved) ])
 
 
 toPhxId : Maybe number -> JD.Decoder (Maybe number)
@@ -208,7 +208,7 @@ toStatus text =
 phxIdToSaveStatus : Int -> JD.Decoder TaskSaveStatus
 phxIdToSaveStatus phxId =
     case phxId of
-        -1 ->
+        (-1) ->
             JD.succeed Unsaved
 
         _ ->
@@ -244,8 +244,8 @@ decodeTodo =
 ackDecoder : JD.Decoder ( Int, Int )
 ackDecoder =
     JD.succeed (,)
-        |: ("phxId" := JD.int)
-        |: ("elmId" := JD.int)
+        |: (JD.field "phxId" JD.int)
+        |: (JD.field "elmId" JD.int)
 
 
 decodeAck : Value -> Result String ( Int, Int )
@@ -256,13 +256,13 @@ decodeAck =
 timedAppStatusDecoder : JD.Decoder ( Time, AppStatus )
 timedAppStatusDecoder =
     JD.succeed (,)
-        |: ("timestamp" := JD.float)
+        |: (JD.field "timestamp" JD.float)
         |: appStatusDecoder
 
 
 appStatusDecoder : JD.Decoder AppStatus
 appStatusDecoder =
-    JD.map toAppStatus ("frozen" := JD.bool)
+    JD.map toAppStatus (JD.field "frozen" JD.bool)
 
 
 toAppStatus : Bool -> AppStatus
