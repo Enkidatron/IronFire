@@ -37,6 +37,10 @@ if (elmDiv) {
 	    	var todos = JSON.parse(savedTodos);
 	    	ironfire.ports.rxTodos.send(todos);
 	    }
+	    var savedAppStatus = localStorage.getItem("elm-ironfire-" + userid + "-appstatus");
+	    if (savedAppStatus) {
+	    	ironfire.ports.rxAppStatus.send(JSON.parse(savedAppStatus));
+	    }
 	  }, 50);
 	});
 	ironfire.ports.saveTodosLocal.subscribe(function(params){
@@ -44,6 +48,12 @@ if (elmDiv) {
 	  	params = JSON.parse(params);
 	    localStorage.setItem("elm-ironfire-" + params.userid + "-todos", JSON.stringify(params.todos));
 	  }, 50);
+	});
+	ironfire.ports.saveAppStatusLocal.subscribe(function(params){
+		setTimeout(function(){
+			params = JSON.parse(params);
+			localStorage.setItem("elm-ironfire-" + params.userid + "-appstatus", JSON.stringify(params.appstatus));
+		}, 50);
 	});
 	ironfire.ports.saveSettingsLocal.subscribe(function(params){
 	  setTimeout(function() {

@@ -41,6 +41,7 @@ type Msg
     | ItIsNow Time
     | ClearLocalTodos
     | RxStatus JE.Value
+    | RxAppStatusLocal JE.Value
     | SetPhxStatus PhxStatus
     | TryReconnect
 

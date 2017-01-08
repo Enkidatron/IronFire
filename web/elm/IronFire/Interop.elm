@@ -78,6 +78,18 @@ encodeLocalTodos userid todos =
         JE.encode 0 value
 
 
+encodeLocalAppStatus : String -> AppStatus -> String
+encodeLocalAppStatus userid status =
+    let
+        value =
+            JE.object
+                [ ( "userid", JE.string userid )
+                , ( "appstatus", JE.string <| toString status )
+                ]
+    in
+        JE.encode 0 value
+
+
 encodeLocalSettings : String -> AppSettings -> String
 encodeLocalSettings userid settings =
     let
@@ -275,6 +287,29 @@ toAppStatus text =
             Normal
 
 
+localAppStatusDecoder : JD.Decoder AppStatus
+localAppStatusDecoder =
+    JD.string |> JD.andThen stringToAppStatus
+
+
+stringToAppStatus : String -> JD.Decoder AppStatus
+stringToAppStatus text =
+    case text of
+        "Normal" ->
+            JD.succeed Normal
+
+        "Frozen" ->
+            JD.succeed Frozen
+
+        _ ->
+            JD.fail "Unexpected AppStatus value"
+
+
 decodeTimedAppStatus : Value -> Result String ( Time, AppStatus )
 decodeTimedAppStatus =
     JD.decodeValue timedAppStatusDecoder
+
+
+decodeLocalAppStatus : Value -> Result String AppStatus
+decodeLocalAppStatus =
+    JD.decodeValue localAppStatusDecoder

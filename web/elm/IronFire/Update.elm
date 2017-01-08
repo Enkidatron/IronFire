@@ -330,6 +330,14 @@ update msg model =
             in
                 { model | status = newStatus } ! []
 
+        RxAppStatusLocal value ->
+            let
+                newStatus =
+                    decodeLocalAppStatus value
+                        |> Result.withDefault model.status
+            in
+                { model | status = newStatus } ! []
+
         SetPhxStatus status ->
             { model | phxStatus = status } ! []
 
@@ -445,7 +453,7 @@ withSaveAppStatus ( model, cmd ) =
             Push.init userTopic "app_status"
                 |> Push.withPayload (jsonTimedAppStatus model.statusTimestamp model.status)
     in
-        model ! [ cmd, Phoenix.push model.phxInfo.phxUrl push ]
+        model ! [ cmd, Phoenix.push model.phxInfo.phxUrl push, saveAppStatusLocal <| encodeLocalAppStatus model.phxInfo.userid model.status ]
 
 
 updateSettings : Model -> (AppSettings -> AppSettings) -> ( Model, Cmd Msg )
@@ -507,6 +515,9 @@ port connectLocal : String -> Cmd msg
 port saveTodosLocal : String -> Cmd msg
 
 
+port saveAppStatusLocal : String -> Cmd msg
+
+
 port saveSettingsLocal : String -> Cmd msg
 
 
@@ -520,6 +531,9 @@ checkForFreezeNow =
 
 
 port rxTodos : (Value -> msg) -> Sub msg
+
+
+port rxAppStatus : (Value -> msg) -> Sub msg
 
 
 port rxSettings : (Value -> msg) -> Sub msg
@@ -594,6 +608,7 @@ subscriptions model =
             ([ Time.every interval CheckForColdTodos
              , Time.every second ItIsNow
              , rxTodos RxTodosLocal
+             , rxAppStatus RxAppStatusLocal
              , rxSettings RxSettings
              , Phoenix.connect socket [ channel ]
              ]
