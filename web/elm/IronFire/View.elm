@@ -150,14 +150,22 @@ displayTodo currentTime coldLength frozen selectedId todo =
         startTime =
             Time.inMilliseconds todo.lastWorked
 
+        timeAdjustmentFromWarmMethod =
+            case todo.warmMethod of
+                Work ->
+                    1.0
+
+                Renew ->
+                    0.5
+
         warmTime =
-            startTime + ((Time.inMilliseconds coldLength) * 1 / 3)
+            startTime + ((Time.inMilliseconds coldLength) * timeAdjustmentFromWarmMethod * 1 / 3)
 
         coolTime =
-            startTime + ((Time.inMilliseconds coldLength) * 2 / 3)
+            startTime + ((Time.inMilliseconds coldLength) * timeAdjustmentFromWarmMethod * 2 / 3)
 
         coldTime =
-            startTime + (Time.inMilliseconds coldLength)
+            startTime + ((Time.inMilliseconds coldLength) * timeAdjustmentFromWarmMethod)
 
         ironColor =
             case todo.status of
