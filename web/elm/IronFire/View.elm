@@ -361,7 +361,7 @@ displaySettingsPanelBody settings =
 
 anvil : String -> Html Msg
 anvil color =
-    Svg.svg [ SA.width "40", SA.height "20", SA.viewBox "0 0 100 50", SA.mask "url(#mask)" ]
+    Svg.svg [ SA.width "40", SA.height "20", SA.viewBox "0 0 100 50" ]
         [ Svg.path [ SA.d "M25 2 V0 H100 V5 C 75 5, 65 15, 65 25 C 65 30, 70 35, 75 35 V50 H25 V35 C 30 35, 35 30, 35 25 S 30 15, 25 15 S 0 12, 0 2 Z", SA.fill color ] []
         ]
 
