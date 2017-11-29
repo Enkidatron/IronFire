@@ -29,6 +29,7 @@ jsonTodo todo =
         , ( "text", JE.string todo.text )
         , ( "notes", JE.string todo.notes )
         , ( "status", JE.string <| toString todo.status )
+        , ( "warmMethod", JE.string <| toString todo.warmMethod )
         , ( "timesRenewed", JE.int todo.timesRenewed )
         , ( "lastWorked", JE.float todo.lastWorked )
         , ( "lastModified", JE.float todo.lastModified )
@@ -172,6 +173,7 @@ todoDecoder =
         |: (JD.field "text" JD.string)
         |: (JD.oneOf [ (JD.field "notes" JD.string), (JD.succeed "") ])
         |: (JD.field "status" JD.string |> JD.andThen toStatus)
+        |: (JD.oneOf [ (JD.field "warmMethod" JD.string |> JD.andThen toWarmMethod), (JD.succeed Work) ])
         |: (JD.field "timesRenewed" JD.int)
         |: (JD.oneOf [ (JD.field "lastTouched" JD.float), (JD.field "lastWorked" JD.float) ])
         |: (JD.oneOf [ (JD.field "lastModified" JD.float), (JD.succeed 0) ])
@@ -215,6 +217,19 @@ toStatus text =
 
         _ ->
             JD.fail "Invalid TodoStatus"
+
+
+toWarmMethod : String -> JD.Decoder WarmMethod
+toWarmMethod text =
+    case text of
+        "Work" ->
+            JD.succeed Work
+
+        "Renew" ->
+            JD.succeed Renew
+
+        _ ->
+            JD.fail ("Invalid Warm Method: '" ++ text ++ "'")
 
 
 phxIdToSaveStatus : Int -> JD.Decoder TaskSaveStatus

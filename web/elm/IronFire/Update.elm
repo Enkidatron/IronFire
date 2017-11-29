@@ -39,7 +39,7 @@ update msg model =
             { model | inputText = text } ! []
 
         DoWorkOnTodo id ->
-            ( updateSpecificTodo model id (\t -> { t | status = Hot, lastWorked = model.currentTime, lastModified = model.currentTime, saveStatus = modifySaveStatus t.saveStatus }), Cmd.none )
+            ( updateSpecificTodo model id (\t -> { t | status = Hot, warmMethod = Work, lastWorked = model.currentTime, lastModified = model.currentTime, saveStatus = modifySaveStatus t.saveStatus }), Cmd.none )
                 |> withSaveModifiedTodosWhere (.elmId >> (==) id)
                 |> withSaveAppStatus
 
@@ -54,7 +54,7 @@ update msg model =
                 |> withSaveAppStatus
 
         RenewTodo id ->
-            ( updateSpecificTodo model id (\t -> { t | status = Hot, timesRenewed = t.timesRenewed + 1, lastWorked = model.currentTime, lastModified = model.currentTime, saveStatus = modifySaveStatus t.saveStatus }), Cmd.none )
+            ( updateSpecificTodo model id (\t -> { t | status = Hot, warmMethod = Renew, timesRenewed = t.timesRenewed + 1, lastWorked = model.currentTime, lastModified = model.currentTime, saveStatus = modifySaveStatus t.saveStatus }), Cmd.none )
                 |> withSaveModifiedTodosWhere (.elmId >> (==) id)
                 |> withSaveAppStatus
 
@@ -138,15 +138,23 @@ update msg model =
                 coldLength =
                     (toFloat model.settings.coldLength) * (toTime model.settings.coldLengthUnit)
 
+                warmMethodAdjustor todo =
+                    case todo.warmMethod of
+                        Renew ->
+                            0.5
+
+                        Work ->
+                            1.0
+
                 newTodos =
                     List.map
                         (\t ->
                             if isAlive t then
-                                if (time - t.lastWorked > coldLength) then
+                                if (time - t.lastWorked > coldLength * (warmMethodAdjustor t)) then
                                     { t | status = Cold }
-                                else if (time - t.lastWorked > coldLength * (2 / 3)) then
+                                else if (time - t.lastWorked > coldLength * (warmMethodAdjustor t) * (2 / 3)) then
                                     { t | status = Cool }
-                                else if (time - t.lastWorked > coldLength * (1 / 3)) then
+                                else if (time - t.lastWorked > coldLength * (warmMethodAdjustor t) * (1 / 3)) then
                                     { t | status = Warm }
                                 else
                                     { t | status = Hot }

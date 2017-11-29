@@ -60,6 +60,11 @@ type TodoStatus
     | Dead
 
 
+type WarmMethod
+    = Renew
+    | Work
+
+
 type TaskSaveStatus
     = Unsaved
     | Modified
@@ -72,6 +77,7 @@ type alias Todo =
     , text : String
     , notes : String
     , status : TodoStatus
+    , warmMethod : WarmMethod
     , timesRenewed : Int
     , lastWorked : Time
     , lastModified : Time
@@ -167,6 +173,7 @@ newTodo id text_ timestamp =
     , text = text_
     , notes = ""
     , status = Hot
+    , warmMethod = Work
     , timesRenewed = 0
     , lastWorked = timestamp
     , lastModified = timestamp
