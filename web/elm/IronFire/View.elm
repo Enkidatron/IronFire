@@ -248,7 +248,7 @@ displayTodo currentTime coldLength frozen selectedId todo =
     in
         [ tr rowAttributes
             [ tdTodoTextElement
-            , td [] [ text <| toString todo.status, tempElement ]
+            , td [] [ tempElement ]
             , td [] [ span [ class "badge" ] [ text <| toString todo.timesRenewed ] ]
             , td [] [ buttons ]
             , td [] [ text saveText ]
